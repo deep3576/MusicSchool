@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page">
+  <div class="page-head">
+    <h1>Admin · Users</h1>
+  </div>
+
+  <div class="card admin-nav" style="margin-top:14px;">
+    <a href="{{ url_for('admin.messages') }}">Messages</a>
+    <a href="{{ url_for('admin.teachers') }}" >Teachers</a>
+    <a href="{{ url_for('admin.venues') }}">Venues</a>
+    <a href="{{ url_for('admin.syllabus') }}">Syllabus</a>
+    <a href="{{ url_for('admin.bookings') }}">Bookings</a>
+    <a href="{{ url_for('admin.users') }}" class="active">Users</a>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Create User</h3>
+    <form method="post" action="{{ url_for('admin.user_create') }}" class="form">
+      <div class="row2">
+        <div class="field">
+          <label>Email</label>
+          <input class="input" name="email" required>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input class="input" name="password" type="password" required>
+        </div>
+      </div>
+      <div class="field">
+        <label>Role</label>
+        <select class="input" name="role">
+          <option value="customer">customer</option>
+          <option value="admin">admin</option>
+        </select>
+      </div>
+      <button class="btn" type="submit">Create</button>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h3 style="margin-top:0;">Users</h3>
+    {% for u in items %}
+      <div class="card" style="box-shadow:none; border:1px solid var(--border); margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:950;">
+              {{ u.email }}
+              <span class="pill">{{ u.role }}</span>
+            </div>
+            <div class="muted">
+              {{ u.full_name }}{% if u.phone %} · {{ u.phone }}{% endif %}
+            </div>
+          </div>
+
+          <form method="post" action="{{ url_for('admin.user_set_role', user_id=u.id) }}" style="display:flex; gap:10px; align-items:center;">
+            <select class="input" name="role" style="width:160px;">
+              <option value="customer" {% if u.role=='customer' %}selected{% endif %}>customer</option>
+              <option value="admin" {% if u.role=='admin' %}selected{% endif %}>admin</option>
+            </select>
+            <button class="btn secondary" type="submit">Update</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

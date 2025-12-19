@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page">
+  <div class="page-head">
+    <h1>Admin · Syllabus</h1>
+  </div>
+
+ <div class="card admin-nav" style="margin-top:14px;">
+    <a href="{{ url_for('admin.messages') }}">Messages</a>
+    <a href="{{ url_for('admin.teachers') }}" >Teachers</a>
+    <a href="{{ url_for('admin.venues') }}">Venues</a>
+    <a href="{{ url_for('admin.syllabus') }}" class="active">Syllabus</a>
+    <a href="{{ url_for('admin.bookings') }}">Bookings</a>
+    <a href="{{ url_for('admin.users') }}">Users</a>
+  </div>
+
+
+  <div class="card">
+    <form method="get" action="{{ url_for('admin.syllabus') }}" class="form">
+      <div class="row2">
+        <div class="field">
+          <label>Select Class Level</label>
+          <select class="input" name="class_level_id" onchange="this.form.submit()">
+            {% for lv in levels %}
+              <option value="{{ lv.id }}" {% if selected_level and lv.id == selected_level.id %}selected{% endif %}>
+                {{ lv.code }} · {{ lv.title }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn secondary" type="submit">Refresh</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {% if selected_level %}
+    <div class="card" style="margin-top:14px;">
+      <h3 style="margin-top:0;">Add Syllabus Item · {{ selected_level.code }}</h3>
+      <form method="post" action="{{ url_for('admin.syllabus_add') }}" class="form">
+        <input type="hidden" name="class_level_id" value="{{ selected_level.id }}">
+
+        <div class="row2">
+          <div class="field">
+            <label>Unit No (optional)</label>
+            <input class="input" type="number" name="unit_no" min="1">
+          </div>
+          <div class="field">
+            <label>Topic</label>
+            <input class="input" name="topic" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Details (optional)</label>
+          <textarea class="input textarea" name="details"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Resource Link (optional)</label>
+          <input class="input" name="resource_link" placeholder="https://...">
+        </div>
+
+        <button class="btn" type="submit">Add Item</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <h3 style="margin-top:0;">Items</h3>
+
+      {% if not items %}
+        <p class="muted">No syllabus items yet.</p>
+      {% else %}
+        {% for it in items %}
+          <div class="card" style="box-shadow:none; border:1px solid var(--border); margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:950;">
+                  {% if it.unit_no %}Unit {{ it.unit_no }} · {% endif %}{{ it.topic }}
+                </div>
+                {% if it.details %}
+                  <div class="muted" style="margin-top:6px; white-space:pre-wrap;">{{ it.details }}</div>
+                {% endif %}
+                {% if it.resource_link %}
+                  <div class="muted" style="margin-top:6px;">
+                    Resource: <a href="{{ it.resource_link }}" target="_blank" rel="noreferrer">{{ it.resource_link }}</a>
+                  </div>
+                {% endif %}
+              </div>
+
+              <form method="post" action="{{ url_for('admin.syllabus_delete', item_id=it.id) }}"
+                    onsubmit="return confirm('Delete this syllabus item?');">
+                <button class="btn secondary" type="submit">Delete</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

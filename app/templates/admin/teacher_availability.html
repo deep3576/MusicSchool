@@ -1,0 +1,333 @@
+{# app/templates/admin/teacher_availability.html #}
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page">
+  <div class="page-head" style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+    <div>
+      <h1 style="margin:0;">Admin · Availability</h1>
+      <p class="muted" style="margin:6px 0 0;">
+        Teacher: <b>{{ teacher.name }}</b> · Slot Duration: <b>{{ teacher.class_duration_min }} min</b>
+        {% if teacher.default_venue %}
+          · Default Venue: <b>{{ teacher.default_venue.name }}</b>
+        {% endif %}
+      </p>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn" type="button" id="openAddWindow">+ Add Availability Window</button>
+      <button class="btn secondary" type="button" id="openBulkGen">Bulk Generator (Recurring)</button>
+      <a class="btn secondary" href="{{ url_for('admin.teachers') }}">Back</a>
+    </div>
+  </div>
+
+  <div class="card admin-nav" style="margin-top:14px;">
+    <a href="{{ url_for('admin.messages') }}">Messages</a>
+    <a href="{{ url_for('admin.teachers') }}" class="active">Teachers</a>
+    <a href="{{ url_for('admin.venues') }}">Venues</a>
+    <a href="{{ url_for('admin.syllabus') }}">Syllabus</a>
+    <a href="{{ url_for('admin.bookings') }}">Bookings</a>
+    <a href="{{ url_for('admin.users') }}">Users</a>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
+      <div style="font-weight:950;">Existing Slots</div>
+      <div class="muted" style="font-size:13px;">
+        Slots are auto-split into {{ teacher.class_duration_min }} minute sections.
+      </div>
+    </div>
+
+    {% if not slots %}
+      <p class="muted" style="margin:10px 0 0;">No slots yet. Use “Add Availability Window” or “Bulk Generator”.</p>
+    {% else %}
+      <div class="table-wrap" style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Start</th>
+              <th>End</th>
+              <th>Venue</th>
+              <th>Status</th>
+              <th style="width:140px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in slots %}
+              <tr>
+                <td>{{ s.start_at }}</td>
+                <td>{{ s.end_at }}</td>
+                <td>
+                  {% if s.venue %}
+                    {{ s.venue.name }}
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if s.is_booked %}
+                    <span class="pill">Booked</span>
+                  {% else %}
+                    <span class="pill ok">Available</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if not s.is_booked %}
+                    <form method="post"
+                          action="{{ url_for('admin.availability_delete', teacher_id=teacher.id, slot_id=s.id) }}"
+                          onsubmit="return confirm('Delete this slot?');">
+                      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                      <button class="btn secondary" type="submit" style="padding:8px 10px;">Delete</button>
+                    </form>
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+{# ===================== MODAL 1: Add Availability Window ===================== #}
+<div id="addWindowModal" class="modal hidden" aria-hidden="true">
+  <div class="modal-backdrop" data-close="1"></div>
+
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="addWindowTitle">
+    <div class="modal-head">
+      <div>
+        <div id="addWindowTitle" style="font-weight:950; font-size:18px;">Add Availability Window</div>
+        <div class="muted">
+          We will split this window into <b>{{ teacher.class_duration_min }} min</b> slots automatically.
+        </div>
+      </div>
+      <button class="btn secondary" type="button" id="closeAddWindow">Close</button>
+    </div>
+
+    <form method="post"
+          action="{{ url_for('admin.availability_create', teacher_id=teacher.id) }}"
+          style="display:grid; gap:10px;">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+      <div class="row2">
+        <div>
+          <label class="muted">Start (Date & Time)</label>
+          <input class="input" type="datetime-local" name="start_at" id="winStart" required>
+        </div>
+        <div>
+          <label class="muted">End (Date & Time)</label>
+          <input class="input" type="datetime-local" name="end_at" id="winEnd" required>
+        </div>
+      </div>
+
+      <div>
+        <label class="muted">Venue (optional)</label>
+        <select class="input" name="venue_id">
+          <option value="">— Use Teacher Default / None —</option>
+          {% for v in venues %}
+            <option value="{{ v.id }}">{{ v.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button class="btn" type="submit">Generate Slots</button>
+    </form>
+  </div>
+</div>
+
+{# ===================== MODAL 2: Bulk Generator (Recurring) ===================== #}
+<div id="bulkGenModal" class="modal hidden" aria-hidden="true">
+  <div class="modal-backdrop" data-close="1"></div>
+
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bulkGenTitle">
+    <div class="modal-head">
+      <div>
+        <div id="bulkGenTitle" style="font-weight:950; font-size:18px;">Bulk Generator (Recurring)</div>
+        <div class="muted">
+          Choose a date range, time window, and weekdays/weekends.
+          We will split into <b>{{ teacher.class_duration_min }} min</b> slots.
+        </div>
+      </div>
+      <button class="btn secondary" type="button" id="closeBulkGen">Close</button>
+    </div>
+
+    <form method="post"
+          action="{{ url_for('admin.availability_bulk', teacher_id=teacher.id) }}"
+          style="display:grid; gap:10px;">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+      <div class="row2">
+        <div>
+          <label class="muted">Start Date</label>
+          <input class="input" type="date" name="start_date" required>
+        </div>
+        <div>
+          <label class="muted">End Date</label>
+          <input class="input" type="date" name="end_date" required>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label class="muted">Start Time</label>
+          <input class="input" type="time" name="start_time" required>
+        </div>
+        <div>
+          <label class="muted">End Time</label>
+          <input class="input" type="time" name="end_time" required>
+        </div>
+      </div>
+
+      <div class="card" style="box-shadow:none; border:1px solid var(--border,#e6e6ee);">
+        <div style="font-weight:950; margin-bottom:8px;">Repeat On</div>
+
+        <div class="dow-grid">
+          <label class="dow-item"><input type="checkbox" name="dow" value="0"> <span>Mon</span></label>
+          <label class="dow-item"><input type="checkbox" name="dow" value="1"> <span>Tue</span></label>
+          <label class="dow-item"><input type="checkbox" name="dow" value="2"> <span>Wed</span></label>
+          <label class="dow-item"><input type="checkbox" name="dow" value="3"> <span>Thu</span></label>
+          <label class="dow-item"><input type="checkbox" name="dow" value="4"> <span>Fri</span></label>
+          <label class="dow-item"><input type="checkbox" name="dow" value="5"> <span>Sat</span></label>
+          <label class="dow-item"><input type="checkbox" name="dow" value="6"> <span>Sun</span></label>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+          <button class="btn secondary" type="button" id="selectWeekdays">Select Weekdays</button>
+          <button class="btn secondary" type="button" id="selectWeekends">Select Weekends</button>
+          <button class="btn secondary" type="button" id="clearDays">Clear</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="muted">Venue (optional)</label>
+        <select class="input" name="venue_id">
+          <option value="">— Use Teacher Default / None —</option>
+          {% for v in venues %}
+            <option value="{{ v.id }}">{{ v.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button class="btn" type="submit">Generate Recurring Slots</button>
+    </form>
+  </div>
+</div>
+
+{# ====== Small helpers (pill styles if not present) + Modal responsiveness ====== #}
+<style>
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    padding:3px 10px;
+    border-radius:999px;
+    border:1px solid var(--border,#e6e6ee);
+    font-size:12px;
+    font-weight:900;
+    background: rgba(255,255,255,.65);
+  }
+  .pill.ok{
+    border-color: rgba(24,169,87,.28);
+    background: rgba(24,169,87,.10);
+  }
+
+  .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling: touch; }
+  table{ width:100%; border-collapse: separate; border-spacing:0; }
+  th,td{ padding: 12px 10px; border-bottom:1px solid rgba(0,0,0,.08); }
+  th{ text-align:left; font-weight:950; }
+
+  .dow-grid{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap:8px;
+  }
+  .dow-item{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    padding:10px 10px;
+    border:1px solid var(--border,#e6e6ee);
+    border-radius:14px;
+    background: rgba(255,255,255,.70);
+    user-select:none;
+  }
+
+  /* Modal */
+  .modal.hidden{ display:none; }
+  .modal{ position:fixed; inset:0; display:grid; place-items:center; z-index:999; }
+  .modal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.35); }
+  .modal-card{
+    position:relative;
+    width:min(92vw, 640px);
+    padding:14px;
+    border-radius:18px;
+    border:1px solid var(--border,#e6e6ee);
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 24px 80px rgba(0,0,0,.18);
+  }
+  .modal-head{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:12px; }
+
+  /* Phone */
+  @media (max-width: 600px){
+    .modal-card{ width:96vw; padding:12px; }
+    .modal-head{ flex-direction:column; align-items:stretch; }
+    .dow-grid{ grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+
+<script>
+(function(){
+  // ---------- Modal helpers ----------
+  function setupModal(openBtnId, modalId, closeBtnId, focusId){
+    const openBtn = document.getElementById(openBtnId);
+    const modal = document.getElementById(modalId);
+    const closeBtn = document.getElementById(closeBtnId);
+    const focusEl = focusId ? document.getElementById(focusId) : null;
+
+    function open(){
+      modal.classList.remove("hidden");
+      modal.setAttribute("aria-hidden", "false");
+      setTimeout(() => { if (focusEl) focusEl.focus(); }, 50);
+    }
+    function close(){
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    openBtn && openBtn.addEventListener("click", open);
+    closeBtn && closeBtn.addEventListener("click", close);
+
+    modal && modal.addEventListener("click", (e) => {
+      if (e.target && e.target.dataset && e.target.dataset.close === "1") close();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) close();
+    });
+
+    return { open, close, modal };
+  }
+
+  setupModal("openAddWindow", "addWindowModal", "closeAddWindow", "winStart");
+  setupModal("openBulkGen", "bulkGenModal", "closeBulkGen", null);
+
+  // ---------- Day quick buttons (Bulk Generator) ----------
+  const weekdayBtn = document.getElementById("selectWeekdays");
+  const weekendBtn = document.getElementById("selectWeekends");
+  const clearBtn = document.getElementById("clearDays");
+
+  function setDays(predicate){
+    document.querySelectorAll('#bulkGenModal input[name="dow"]').forEach(cb => {
+      const v = parseInt(cb.value, 10);
+      cb.checked = predicate(v);
+    });
+  }
+
+  weekdayBtn && weekdayBtn.addEventListener("click", () => setDays(v => v >= 0 && v <= 4));
+  weekendBtn && weekendBtn.addEventListener("click", () => setDays(v => v === 5 || v === 6));
+  clearBtn && clearBtn.addEventListener("click", () => setDays(_ => false));
+})();
+</script>
+{% endblock %}

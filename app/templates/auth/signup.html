@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page">
+  <h1>Sign Up</h1>
+  <div class="card">
+    <form method="post">
+      {{ form.hidden_tag() }}
+      <div class="row2">
+        <div>
+          <label>First Name</label>
+          {{ form.first_name(class_="input") }}
+        </div>
+        <div>
+          <label>Last Name</label>
+          {{ form.last_name(class_="input") }}
+        </div>
+      </div>
+
+      <label style="margin-top:10px;">Email</label>
+      {{ form.email(class_="input") }}
+
+      <label style="margin-top:10px;">Phone</label>
+      {{ form.phone(class_="input") }}
+
+      <label style="margin-top:10px;">Password</label>
+      {{ form.password(class_="input") }}
+
+      <button class="btn" style="margin-top:14px;" type="submit">Create Account</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page">
+  <h1>Contact</h1>
+  <p class="lead">Send us a message and we’ll respond soon.</p>
+
+  <div class="card">
+    <form method="post" class="form">
+      {{ form.hidden_tag() }}
+
+      <div class="row2">
+        <div class="field">
+          <label>{{ form.name.label }}</label>
+          {{ form.name(class_="input", placeholder="Your full name") }}
+          {% for e in form.name.errors %}<div class="err">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="field">
+          <label>{{ form.email.label }}</label>
+          {{ form.email(class_="input", placeholder="you@email.com") }}
+          {% for e in form.email.errors %}<div class="err">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>{{ form.phone.label }}</label>
+          {{ form.phone(class_="input", placeholder="(optional)") }}
+          {% for e in form.phone.errors %}<div class="err">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="field">
+          <label>{{ form.subject.label }}</label>
+          {{ form.subject(class_="input", placeholder="Admissions / Programs / General") }}
+          {% for e in form.subject.errors %}<div class="err">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="field">
+        <label>{{ form.message.label }}</label>
+        {{ form.message(class_="input textarea", placeholder="Write your message...") }}
+        {% for e in form.message.errors %}<div class="err">{{ e }}</div>{% endfor %}
+      </div>
+
+      <button class="btn" type="submit">Send Message</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

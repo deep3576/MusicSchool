@@ -1,0 +1,230 @@
+{# app/templates/admin/teachers.html #}
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page">
+  <div class="page-head" style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+    <div>
+      <h1 style="margin:0;">Admin · Teachers</h1>
+      <p class="muted" style="margin:6px 0 0;">Create teachers, set class duration, and manage availability slots.</p>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn" type="button" id="openAddTeacher">+ Add Teacher</button>
+    </div>
+  </div>
+
+  {# Admin navigation (keep your existing links if you have them) #}
+  <div class="card admin-nav" style="margin-top:14px;">
+    <a href="{{ url_for('admin.messages') }}">Messages</a>
+    <a href="{{ url_for('admin.teachers') }}" class="active">Teachers</a>
+    <a href="{{ url_for('admin.venues') }}">Venues</a>
+    <a href="{{ url_for('admin.syllabus') }}">Syllabus</a>
+    <a href="{{ url_for('admin.bookings') }}">Bookings</a>
+    <a href="{{ url_for('admin.users') }}">Users</a>
+  </div>
+
+  {# Teachers list #}
+  {% if not teachers %}
+    <div class="card" style="margin-top:14px;">
+      <p class="muted" style="margin:0;">No teachers yet. Click <b>Add Teacher</b> to create one.</p>
+    </div>
+  {% else %}
+    <div class="grid3" style="margin-top:14px;">
+      {% for t in teachers %}
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+            <div>
+              <div style="font-weight:950; font-size:18px; line-height:1.2;">
+                {{ t.name }}
+              </div>
+              <div class="muted" style="margin-top:6px;">
+                {% if t.email %}{{ t.email }}{% else %}<span class="muted">No email</span>{% endif %}
+              </div>
+
+              <div class="muted" style="margin-top:8px;">
+                <b>Duration:</b> {{ t.class_duration_min }} min
+              </div>
+
+              <div class="muted" style="margin-top:6px;">
+                <b>Default Venue:</b>
+                {% if t.default_venue %}
+                  {{ t.default_venue.name }}
+                {% else %}
+                  — not set —
+                {% endif %}
+              </div>
+
+              {% if t.bio %}
+                <div class="muted" style="margin-top:10px;">
+                  {{ t.bio }}
+                </div>
+              {% endif %}
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px; min-width:160px;">
+              <a class="btn secondary" href="{{ url_for('admin.teacher_availability', teacher_id=t.id) }}">
+                Manage Availability
+              </a>
+
+              <form method="post" action="{{ url_for('admin.teacher_toggle', teacher_id=t.id) }}">
+                {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                <button class="btn secondary" type="submit">
+                  {% if t.is_active %}Deactivate{% else %}Activate{% endif %}
+                </button>
+              </form>
+
+              <div class="muted" style="font-size:12px;">
+                Status:
+                {% if t.is_active %}
+                  <span style="font-weight:900;">Active</span>
+                {% else %}
+                  <span style="font-weight:900;">Inactive</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <hr style="border:none;border-top:1px solid var(--border,#e6e6ee); margin:14px 0;">
+
+          <div style="font-weight:950; margin-bottom:8px;">Quick Update</div>
+
+          <form method="post" action="{{ url_for('admin.teacher_update', teacher_id=t.id) }}"
+                style="display:grid; gap:10px;">
+            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+            <div class="row2">
+              <div>
+                <label class="muted">Class Duration (minutes)</label>
+                <input class="input" type="number" name="class_duration_min"
+                       min="15" max="240" value="{{ t.class_duration_min }}">
+              </div>
+
+              <div>
+                <label class="muted">Default Venue</label>
+                <select class="input" name="default_venue_id">
+                  <option value="">— None —</option>
+                  {% for v in venues %}
+                    <option value="{{ v.id }}" {% if t.default_venue and t.default_venue.id==v.id %}selected{% endif %}>
+                      {{ v.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <button class="btn secondary" type="submit">Save</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>
+
+{# ---------------- MODAL: Add Teacher ---------------- #}
+<div id="addTeacherModal" class="modal hidden" aria-hidden="true">
+  <div class="modal-backdrop" data-close="1"></div>
+
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="addTeacherTitle">
+    <div class="modal-head">
+      <div>
+        <div id="addTeacherTitle" style="font-weight:950; font-size:18px;">Add Teacher</div>
+        <div class="muted">Create a teacher and set default class duration.</div>
+      </div>
+      <button class="btn secondary" type="button" id="closeAddTeacher">Close</button>
+    </div>
+
+    <form method="post" action="{{ url_for('admin.teacher_create') }}" style="display:grid; gap:10px;">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+      <div>
+        <label class="muted">Teacher Name *</label>
+        <input class="input" type="text" name="name" id="teacherName" required placeholder="e.g., Gurpreet Singh">
+      </div>
+
+      <div class="row2">
+        <div>
+          <label class="muted">Email</label>
+          <input class="input" type="email" name="email" placeholder="teacher@email.com">
+        </div>
+
+        <div>
+          <label class="muted">Class Duration (minutes)</label>
+          <input class="input" type="number" name="class_duration_min" min="15" max="240" value="45">
+        </div>
+      </div>
+
+      <div>
+        <label class="muted">Default Venue (optional)</label>
+        <select class="input" name="default_venue_id">
+          <option value="">— None —</option>
+          {% for v in venues %}
+            <option value="{{ v.id }}">{{ v.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="muted">Bio (optional)</label>
+        <textarea class="input" name="bio" rows="3" placeholder="Short description about the teacher..."></textarea>
+      </div>
+
+      <label style="display:flex; gap:10px; align-items:center;">
+        <input type="checkbox" name="is_active" value="1" checked>
+        <span class="muted">Active</span>
+      </label>
+
+      <button class="btn" type="submit" style="margin-top:6px;">Create Teacher</button>
+    </form>
+  </div>
+</div>
+
+{# Fallback modal CSS (keep if you don’t already have modal styles in your CSS files) #}
+<style>
+  .modal.hidden{ display:none; }
+  .modal{ position:fixed; inset:0; display:grid; place-items:center; z-index:999; }
+  .modal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.35); }
+  .modal-card{
+    position:relative;
+    width:min(92vw, 560px);
+    padding:14px;
+    border-radius:18px;
+    border:1px solid var(--border,#e6e6ee);
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 24px 80px rgba(0,0,0,.18);
+  }
+  .modal-head{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:12px; }
+</style>
+
+<script>
+(function(){
+  const openBtn = document.getElementById("openAddTeacher");
+  const modal = document.getElementById("addTeacherModal");
+  const closeBtn = document.getElementById("closeAddTeacher");
+  const nameInput = document.getElementById("teacherName");
+
+  function openModal(){
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    setTimeout(() => nameInput && nameInput.focus(), 50);
+  }
+
+  function closeModal(){
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  openBtn && openBtn.addEventListener("click", openModal);
+  closeBtn && closeBtn.addEventListener("click", closeModal);
+
+  modal.addEventListener("click", (e) => {
+    if (e.target && e.target.dataset && e.target.dataset.close === "1") closeModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modal.classList.contains("hidden")) closeModal();
+  });
+})();
+</script>
+
+{% endblock %}

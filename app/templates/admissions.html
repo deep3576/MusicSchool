@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page">
+  <h1>Admissions</h1>
+  <p class="lead">A simple admissions flow you can update anytime.</p>
+
+  <div class="card">
+    <ol class="steps">
+      <li><strong>Inquiry:</strong> Send us a message from the Contact page.</li>
+      <li><strong>Meet:</strong> We schedule a short call or visit.</li>
+      <li><strong>Assessment:</strong> Optional placement/level check if needed.</li>
+      <li><strong>Enrollment:</strong> Confirm program + start date.</li>
+    </ol>
+    <a class="btn" href="{{ url_for('main.contact') }}">Contact Admissions</a>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page">
+  <h1>Book a Class</h1>
+  <p class="lead">Pick any available time. A teacher will be assigned automatically.</p>
+
+  {% if not current_user.is_authenticated %}
+    <div class="card" style="margin-bottom:14px;">
+      <div style="font-weight:950;">Login Required</div>
+      <div class="muted" style="margin-top:6px;">
+        Please <a href="{{ url_for('main.login') }}">login</a> or
+        <a href="{{ url_for('main.signup') }}">sign up</a> to book a class.
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div id="calendar"></div>
+    <p class="muted" style="margin-top:10px;">Click an available slot to book.</p>
+  </div>
+</section>
+
+<!-- Confirm Modal -->
+<div id="bookingModal" class="modal hidden" aria-hidden="true">
+  <div class="modal-backdrop"></div>
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <div style="font-weight:950; font-size:18px;">Confirm Booking</div>
+        <div class="muted">Teacher will be assigned automatically.</div>
+      </div>
+      <button class="btn secondary" type="button" id="modalClose">Close</button>
+    </div>
+
+    <div class="card" style="box-shadow:none; border:1px solid var(--border);">
+      <div style="font-weight:900;">Selected Slot</div>
+      <div class="muted" id="modalTime" style="margin-top:6px;"></div>
+    </div>
+
+    <form method="post" action="{{ url_for('main.book_submit') }}" style="margin-top:12px;">
+      <input type="hidden" name="availability_id" id="fAvailabilityId">
+      <button class="btn" type="submit" style="width:100%;">Confirm Booking</button>
+    </form>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<script>
+(function(){
+  const modal = document.getElementById("bookingModal");
+  const modalClose = document.getElementById("modalClose");
+  const modalTime = document.getElementById("modalTime");
+  const fAvailabilityId = document.getElementById("fAvailabilityId");
+  const isLoggedIn = {{ "true" if current_user.is_authenticated else "false" }};
+
+  function openModal(){ modal.classList.remove("hidden"); }
+  function closeModal(){ modal.classList.add("hidden"); }
+  modalClose.addEventListener("click", closeModal);
+  modal.querySelector(".modal-backdrop").addEventListener("click", closeModal);
+
+  const calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
+    initialView: "timeGridWeek",
+    height: "auto",
+    nowIndicator: true,
+    allDaySlot: false,
+    slotMinTime: "07:00:00",
+    slotMaxTime: "22:00:00",
+    headerToolbar: { left:"prev,next today", center:"title", right:"dayGridMonth,timeGridWeek,timeGridDay" },
+
+    events: function(fetchInfo, success, failure){
+      const url = `/api/availability?start=${encodeURIComponent(fetchInfo.startStr)}&end=${encodeURIComponent(fetchInfo.endStr)}`;
+      fetch(url).then(r => r.json()).then(success).catch(failure);
+    },
+
+    eventTimeFormat: { hour: "numeric", minute: "2-digit", meridiem: "short" },
+    eventContent: function(arg){
+      return { html: `<div style="font-weight:950;">${arg.timeText}</div><div style="opacity:.85;">Available</div>` };
+    },
+
+    eventClick: function(info){
+      if(!isLoggedIn){
+        alert("Please login/signup to book.");
+        return;
+      }
+      fAvailabilityId.value = info.event.id;
+      modalTime.textContent = `${info.event.start.toLocaleString()} — ${info.event.end.toLocaleString()}`;
+      openModal();
+    }
+  });
+
+  calendar.render();
+})();
+</script>
+{% endblock %}

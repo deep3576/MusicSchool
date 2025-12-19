@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page">
+  <h1>Admin Login</h1>
+
+  <div class="card">
+    <form method="post" class="form">
+      {{ form.hidden_tag() }}
+
+      <div class="field">
+        <label>{{ form.email.label }}</label>
+        {{ form.email(class_="input") }}
+        {% for e in form.email.errors %}<div class="err">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="field">
+        <label>{{ form.password.label }}</label>
+        {{ form.password(class_="input") }}
+        {% for e in form.password.errors %}<div class="err">{{ e }}</div>{% endfor %}
+      </div>
+
+      <button class="btn" type="submit">Login</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

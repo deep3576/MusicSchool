@@ -1,0 +1,102 @@
+{# app/templates/admin/bookings.html #}
+{% extends "base.html" %}
+{% block content %}
+<section class="page">
+  <div class="page-head">
+    <h1>Admin · Bookings</h1>
+  </div>
+
+  <div class="card admin-nav">
+    <a href="{{ url_for('admin.messages') }}">Messages</a>
+    <a href="{{ url_for('admin.teachers') }}">Teachers</a>
+    <a href="{{ url_for('admin.venues') }}">Venues</a>
+    <a href="{{ url_for('admin.syllabus') }}">Syllabus</a>
+    <a href="{{ url_for('admin.bookings') }}" class="active">Bookings</a>
+    <a href="{{ url_for('admin.users') }}">Users</a>
+  </div>
+
+  {% if not bookings %}
+    <div class="card">
+      <p class="muted" style="margin:0;">No bookings yet.</p>
+    </div>
+  {% else %}
+    <div class="card" style="margin-top:14px;">
+      <h3 style="margin-top:0;">Recent Bookings</h3>
+
+      {% for b in bookings %}
+        <div class="card {% if b.status != 'BOOKED' %}replied{% endif %}"
+             style="box-shadow:none; border:1px solid var(--border); margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div style="min-width:260px;">
+              <div style="font-weight:950;">
+                Booking #{{ b.id }}
+                <span class="pill {% if b.status=='BOOKED' %}ok{% endif %}">{{ b.status }}</span>
+              </div>
+              <div class="muted" style="margin-top:6px;">
+                <b>Student:</b> {{ b.student_name }} · {{ b.student_email }}
+                {% if b.student_phone %} · {{ b.student_phone }}{% endif %}
+              </div>
+              <div class="muted" style="margin-top:6px;">
+                <b>Teacher:</b> {{ b.teacher.name }}
+              </div>
+              <div class="muted" style="margin-top:6px;">
+                <b>Time:</b>
+                {{ b.availability.start_at.strftime("%Y-%m-%d %H:%M") }}
+                —
+                {{ b.availability.end_at.strftime("%H:%M") }}
+              </div>
+              <div class="muted" style="margin-top:6px;">
+                <b>Venue:</b>
+                {% if b.venue %}
+                  {{ b.venue.name }}
+                {% else %}
+                  — not set —
+                {% endif %}
+              </div>
+              <div class="muted" style="margin-top:6px;">
+                <b>Class:</b>
+                {% if b.class_level %}
+                  {{ b.class_level.code }} · {{ b.class_level.title }}
+                {% else %}
+                  <span class="pill">Not Assigned</span>
+                {% endif %}
+              </div>
+              <div class="muted" style="margin-top:6px; font-size:13px;">
+                Created: {{ b.created_at.strftime("%Y-%m-%d %H:%M") if b.created_at else "" }}
+              </div>
+            </div>
+
+            <div style="min-width:300px; flex:1;">
+              <div style="font-weight:950; margin-bottom:8px;">Assign / Change Class</div>
+              <form method="post" action="{{ url_for('admin.booking_set_class', booking_id=b.id) }}"
+                    style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <select class="input" name="class_level_id" style="flex:1; min-width:240px;">
+                  <option value="">— No Class Assigned —</option>
+                  {% for lv in levels %}
+                    <option value="{{ lv.id }}" {% if b.class_level and b.class_level.id==lv.id %}selected{% endif %}>
+                      {{ lv.code }} · {{ lv.title }}
+                    </option>
+                  {% endfor %}
+                </select>
+                <button class="btn secondary" type="submit">Save</button>
+              </form>
+
+              <div style="margin-top:14px;">
+                {% if b.status == 'BOOKED' %}
+                  <form method="post" action="{{ url_for('admin.booking_cancel', booking_id=b.id) }}"
+                        onsubmit="return confirm('Cancel this booking and free the slot?');">
+                    <button class="btn secondary" type="submit">Cancel Booking</button>
+                  </form>
+                {% else %}
+                  <div class="muted">This booking is not active.</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

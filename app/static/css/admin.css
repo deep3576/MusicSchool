@@ -1,0 +1,271 @@
+/* app/static/css/admin.css */
+/* Loads ONLY on admin pages via base.html condition (see below). */
+
+:root{
+  --admin-bg: #f6fbf7;
+  --admin-card: rgba(255,255,255,.92);
+  --admin-border: rgba(20, 70, 40, .14);
+  --admin-text: #0c1a12;
+  --admin-muted: rgba(12, 26, 18, .64);
+
+  --admin-green: #18a957;
+  --admin-green-2: #0f8f48;
+  --admin-green-soft: rgba(24,169,87,.10);
+
+  --admin-shadow: 0 16px 60px rgba(10, 40, 22, .10);
+  --admin-radius: 18px;
+}
+
+/* Background + typography */
+body.admin{
+  background:
+    radial-gradient(900px 520px at 12% 0%, rgba(24,169,87,.12), transparent 55%),
+    radial-gradient(900px 520px at 88% 0%, rgba(24,169,87,.10), transparent 55%),
+    var(--admin-bg);
+  color: var(--admin-text);
+}
+
+/* Topbar becomes green-tinted to signal Admin */
+body.admin .topbar{
+  background: rgba(255,255,255,.78);
+  border-bottom: 1px solid var(--admin-border);
+  box-shadow: 0 10px 40px rgba(10, 40, 22, .08);
+}
+
+body.admin .brand{
+  color: var(--admin-text);
+}
+
+body.admin .brand::before{
+  content:"✓";
+  background: linear-gradient(135deg, rgba(24,169,87,.18), rgba(24,169,87,.08));
+  border: 1px solid var(--admin-border);
+}
+
+/* Nav links */
+body.admin .nav a{
+  color: rgba(12,26,18,.90);
+}
+body.admin .nav a:hover{
+  background: var(--admin-green-soft);
+  border-color: rgba(24,169,87,.22);
+}
+
+/* "Admin Portal" indicator pill if you add it */
+body.admin .admin-indicator{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  border: 1px solid rgba(24,169,87,.25);
+  background: rgba(255,255,255,.75);
+  color: rgba(12,26,18,.78);
+  font-weight: 900;
+}
+body.admin .admin-indicator .dot{
+  width:10px; height:10px; border-radius:999px;
+  background: var(--admin-green);
+  box-shadow: 0 0 0 4px rgba(24,169,87,.12);
+}
+
+/* Cards become cleaner */
+body.admin .card{
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow);
+}
+
+/* Buttons go green */
+body.admin .btn{
+  border-color: rgba(24,169,87,.30);
+  background: linear-gradient(135deg, var(--admin-green), var(--admin-green-2));
+  box-shadow: 0 12px 26px rgba(24,169,87,.20);
+}
+body.admin .btn:hover{ filter: brightness(1.02); transform: translateY(-1px); }
+body.admin .btn:active{ transform: translateY(0); }
+
+body.admin .btn.secondary{
+  background: rgba(255,255,255,.85);
+  color: var(--admin-text);
+  border-color: var(--admin-border);
+  box-shadow:none;
+}
+body.admin .btn.secondary:hover{
+  background: rgba(255,255,255,.98);
+}
+
+/* Inputs get green focus */
+body.admin .input{
+  border-color: var(--admin-border);
+  background: rgba(255,255,255,.92);
+}
+body.admin .input:focus{
+  border-color: rgba(24,169,87,.45);
+  box-shadow: 0 0 0 4px rgba(24,169,87,.12);
+}
+
+/* Admin nav bar (if you use .admin-nav links) */
+body.admin .admin-nav{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  padding:12px;
+}
+body.admin .admin-nav a{
+  text-decoration:none;
+  padding:10px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  color: rgba(12,26,18,.88);
+  background: rgba(255,255,255,.70);
+}
+body.admin .admin-nav a:hover{
+  background: var(--admin-green-soft);
+  border-color: rgba(24,169,87,.22);
+}
+body.admin .admin-nav a.active{
+  background: linear-gradient(135deg, rgba(24,169,87,.16), rgba(24,169,87,.08));
+  border-color: rgba(24,169,87,.28);
+  font-weight: 950;
+}
+
+/* Muted text */
+body.admin .muted{ color: var(--admin-muted); }
+
+/* Tables (if any admin template uses tables) */
+body.admin table{
+  width:100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+body.admin table th, body.admin table td{
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(20,70,40,.12);
+}
+body.admin table th{
+  text-align:left;
+  font-weight: 950;
+  color: rgba(12,26,18,.82);
+}
+body.admin table tr:hover td{
+  background: rgba(24,169,87,.06);
+}
+
+/* “Replied” shaded effect (your messages page uses .replied sometimes) */
+body.admin .replied{
+  opacity: .82;
+  background: rgba(24,169,87,.06) !important;
+  border-color: rgba(24,169,87,.22) !important;
+}
+
+/* ============================
+   RESPONSIVE PACK (ADMIN)
+   White + Green Admin portal
+   Add this at the END of admin.css
+============================ */
+
+@media (max-width: 980px){
+  body.admin .wrap{ padding: 14px; }
+}
+
+/* Tablet */
+@media (max-width: 900px){
+  body.admin .topbar-inner{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  body.admin .nav{ justify-content: center; }
+  body.admin .nav-right{ justify-content: center; }
+
+  body.admin .admin-nav{
+    padding: 10px;
+    justify-content: center;
+  }
+
+  /* If you use grid layouts in admin */
+  body.admin .grid3{ grid-template-columns: 1fr; }
+  body.admin .row2{ grid-template-columns: 1fr !important; }
+}
+
+/* Phones */
+@media (max-width: 600px){
+  body.admin .wrap{ padding: 12px; }
+  body.admin .card{ padding: 12px; border-radius: 16px; }
+
+  /* Admin nav should wrap and remain clickable */
+  body.admin .admin-nav a{
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+
+  /* Buttons full-width for admin forms on phone */
+  body.admin .btn,
+  body.admin .btn.secondary{
+    width: 100%;
+  }
+
+  /* Tables: make scrollable on phone */
+  body.admin .table-wrap{
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  body.admin table{
+    min-width: 720px; /* forces horizontal scroll instead of squishing */
+  }
+}
+
+/* Very small phones ~400px */
+@media (max-width: 420px){
+  body.admin .admin-indicator{
+    width: 100%;
+    justify-content: center;
+  }
+}
+/* Admin Bell (Messages Pending) */
+body.admin .admin-bell{
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 70, 40, .16);
+  background: rgba(255,255,255,.75);
+  text-decoration: none;
+  transition: transform .14s ease, background .14s ease;
+}
+body.admin .admin-bell:hover{
+  background: rgba(24,169,87,.10);
+  transform: translateY(-1px);
+}
+body.admin .admin-bell svg{
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--admin-green, #18a957);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+body.admin .bell-badge{
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--admin-green, #18a957);
+  color: #fff;
+  font-weight: 950;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+}

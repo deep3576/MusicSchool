@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero">
+  <div class="hero-bg"
+       style="background-image:url('{{ url_for('static', filename='img/Hero.png') }}');"></div>
+
+  <div class="hero-overlay"></div>
+
+  <div class="hero-inner">
+    <div class="hero-card">
+      <div class="badge">Indian Music School</div>
+      <h1>The Spirit School</h1>
+      <p class="hero-sub">
+        Learn Indian classical & light music with structured levels (1M → 10M),
+        guided syllabus, and teacher-led sessions.
+      </p>
+
+      <div class="hero-cta">
+        <a class="btn" href="{{ url_for('main.book') }}">Book Now</a>
+        {% if not current_user.is_authenticated %}
+          <a class="btn secondary" href="{{ url_for('main.signup') }}">Create Account</a>
+        {% else %}
+          <a class="btn secondary" href="{{ url_for('main.my_bookings') }}">My Bookings</a>
+        {% endif %}
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-num">1M–10M</div>
+          <div class="stat-label">Levels</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">45 min</div>
+          <div class="stat-label">Default Class</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">Live</div>
+          <div class="stat-label">Teacher Slots</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>What you’ll learn</h2>
+    <p class="muted">A calm, structured path — practice-focused, with clear progression.</p>
+  </div>
+
+  <div class="grid3">
+    <div class="card feature">
+      <div class="feature-ico">🎵</div>
+      <div class="feature-title">Divine Routine</div>
+      <div class="muted">Warm-ups, breath, swar practice, and steady improvement.</div>
+    </div>
+    <div class="card feature">
+      <div class="feature-ico">🎵</div>
+      <div class="feature-title">Syllabus by Level</div>
+      <div class="muted">Admin defines the syllabus for each class level (1M–10M).</div>
+    </div>
+    <div class="card feature">
+      <div class="feature-ico">📅</div>
+      <div class="feature-title">Simple Booking</div>
+      <div class="muted">Pick any available time — a teacher is assigned automatically.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>School Moments</h2>
+    <p class="muted">A glimpse of our instruments, classrooms, and practice.</p>
+  </div>
+
+  <div class="gallery">
+    <a class="gitem" href="{{ url_for('main.book') }}">
+      <img src="{{ url_for('static', filename='img/tabla.png') }}" alt="Tabla">
+      <div class="gcap">
+        <div class="gtitle">Tabla Rhythm</div>
+        <div class="muted">Laykaari · Theka · Taal</div>
+      </div>
+    </a>
+
+    <a class="gitem" href="{{ url_for('main.book') }}">
+      <img src="{{ url_for('static', filename='img/Harmonium.png') }}" alt="Harmonium">
+      <div class="gcap">
+        <div class="gtitle">Harmonium</div>
+        <div class="muted">Swar support · Scale practice</div>
+      </div>
+    </a>
+
+    <a class="gitem" href="{{ url_for('main.book') }}">
+      <img src="{{ url_for('static', filename='img/Class.png') }}" alt="Classroom">
+      <div class="gcap">
+        <div class="gtitle">Calm Classroom</div>
+        <div class="muted">Guided practice sessions</div>
+      </div>
+    </a>
+  </div>
+</section>
+
+<section class="section">
+  <div class="card callout">
+    <div>
+      <h3 style="margin:0;">Ready to begin your journey?</h3>
+      <p class="muted" style="margin:8px 0 0;">
+        Book a slot in seconds. Admin will assign your class level after booking.
+      </p>
+    </div>
+    <a class="btn" href="{{ url_for('main.book') }}">Book a Class</a>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>{{ title or "The Spirit School" }}</title>
+
+  {# Your existing CSS file (keep the filename you already use) #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+{% if request.blueprint == 'admin' %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endif %}
+
+  {% block head %}{% endblock %}
+</head>
+
+<body class="{% if request.blueprint == 'admin' %}admin{% endif %}">
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="{{ url_for('main.index') }}">
+        TheSpiritSchool.ca
+      </a>
+
+      <nav class="nav">
+        <a href="{{ url_for('main.index') }}">Home</a>
+        <a href="{{ url_for('main.book') }}">Book Now</a>
+
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('main.my_bookings') }}">My Bookings</a>
+        {% endif %}
+
+        {% if current_user.is_authenticated and current_user.is_admin %}
+          <a href="{{ url_for('admin.messages') }}">Admin</a>
+        {% endif %}
+      </nav>
+
+      <div class="nav-right">
+        {% if current_user.is_authenticated %}
+          <span class="user-pill">
+            {{ current_user.full_name }}
+            {% if current_user.is_admin %}<span class="pill">Admin</span>{% endif %}
+          </span>
+          <a class="btn secondary" href="{{ url_for('main.logout') }}">Logout</a>
+        {% else %}
+          <a class="btn secondary" href="{{ url_for('main.login') }}">Login</a>
+          <a class="btn" href="{{ url_for('main.signup') }}">Sign Up</a>
+        {% endif %}
+      </div>
+      {% if request.blueprint == 'admin'
+      and current_user.is_authenticated
+      and current_user.is_admin
+      and (admin_unreplied_count|int) > 0 %}
+  <a class="admin-bell" href="{{ url_for('admin.messages') }}" title="Messages to reply">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5"/>
+      <path d="M9 17a3 3 0 0 0 6 0"/>
+    </svg>
+    <span class="bell-badge">{{ admin_unreplied_count }}</span>
+  </a>
+{% endif %}
+
+
+    </div>
+  </header>
+
+  <main class="wrap">
+    {% with msgs = get_flashed_messages(with_categories=True) %}
+      {% if msgs %}
+        <div class="flash-wrap">
+          {% for cat, msg in msgs %}
+            <div class="flash {{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

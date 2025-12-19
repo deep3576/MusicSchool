@@ -1,0 +1,199 @@
+{# app/templates/admin/venues.html #}
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page">
+  <div class="page-head" style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+    <div>
+      <h1 style="margin:0;">Admin · Venues</h1>
+      <p class="muted" style="margin:6px 0 0;">Manage class venues/locations used for bookings.</p>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn" type="button" id="openAddVenue">+ Add Venue</button>
+      <a class="btn secondary" href="{{ url_for('main.logout') }}">Logout</a>
+    </div>
+  </div>
+
+  <div class="card admin-nav" style="margin-top:14px;">
+    <a href="{{ url_for('admin.messages') }}">Messages</a>
+    <a href="{{ url_for('admin.teachers') }}">Teachers</a>
+    <a href="{{ url_for('admin.venues') }}" class="active">Venues</a>
+    <a href="{{ url_for('admin.syllabus') }}">Syllabus</a>
+    <a href="{{ url_for('admin.bookings') }}">Bookings</a>
+    <a href="{{ url_for('admin.users') }}">Users</a>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
+      <div style="font-weight:950;">Venues</div>
+      <div class="muted" style="font-size:13px;">Tip: set active venues only. Teachers can choose default venue.</div>
+    </div>
+
+    {% if not venues %}
+      <p class="muted" style="margin:10px 0 0;">No venues yet. Click <b>Add Venue</b> to create one.</p>
+    {% else %}
+      <div class="table-wrap" style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Address</th>
+              <th>Notes</th>
+              <th>Status</th>
+              <th style="width:170px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in venues %}
+              <tr>
+                <td style="font-weight:900;">{{ v.name }}</td>
+                <td>
+                  {% if v.address %}
+                    {{ v.address }}
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if v.notes %}
+                    {{ v.notes }}
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if v.is_active %}
+                    <span class="pill ok">Active</span>
+                  {% else %}
+                    <span class="pill">Inactive</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <form method="post" action="{{ url_for('admin.venue_toggle', venue_id=v.id) }}">
+                      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                      <button class="btn secondary" type="submit" style="padding:8px 10px;">
+                        {% if v.is_active %}Deactivate{% else %}Activate{% endif %}
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+{# ---------------- MODAL: Add Venue ---------------- #}
+<div id="addVenueModal" class="modal hidden" aria-hidden="true">
+  <div class="modal-backdrop" data-close="1"></div>
+
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="addVenueTitle">
+    <div class="modal-head">
+      <div>
+        <div id="addVenueTitle" style="font-weight:950; font-size:18px;">Add Venue</div>
+        <div class="muted">Create a location for classes and bookings.</div>
+      </div>
+      <button class="btn secondary" type="button" id="closeAddVenue">Close</button>
+    </div>
+
+    <form method="post" action="{{ url_for('admin.venue_create') }}" style="display:grid; gap:10px;">
+      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+
+      <div>
+        <label class="muted">Venue Name *</label>
+        <input class="input" type="text" name="name" id="venueName" required placeholder="e.g., Brampton Studio">
+      </div>
+
+      <div>
+        <label class="muted">Address (optional)</label>
+        <input class="input" type="text" name="address" placeholder="Street, City, Province">
+      </div>
+
+      <div>
+        <label class="muted">Notes (optional)</label>
+        <textarea class="input" name="notes" rows="3" placeholder="Parking, room info, etc."></textarea>
+      </div>
+
+      <label style="display:flex; gap:10px; align-items:center;">
+        <input type="checkbox" name="is_active" value="1" checked>
+        <span class="muted">Active</span>
+      </label>
+
+      <button class="btn" type="submit" style="margin-top:6px;">Create Venue</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .pill{
+    display:inline-flex; align-items:center;
+    padding:3px 10px; border-radius:999px;
+    border:1px solid var(--border,#e6e6ee);
+    font-size:12px; font-weight:900;
+    background: rgba(255,255,255,.65);
+  }
+  .pill.ok{
+    border-color: rgba(24,169,87,.28);
+    background: rgba(24,169,87,.10);
+  }
+  .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table{ width:100%; border-collapse:separate; border-spacing:0; }
+  th,td{ padding:12px 10px; border-bottom:1px solid rgba(0,0,0,.08); }
+  th{ text-align:left; font-weight:950; }
+
+  /* Modal (fallback) */
+  .modal.hidden{ display:none; }
+  .modal{ position:fixed; inset:0; display:grid; place-items:center; z-index:999; }
+  .modal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.35); }
+  .modal-card{
+    position:relative;
+    width:min(92vw, 560px);
+    padding:14px;
+    border-radius:18px;
+    border:1px solid var(--border,#e6e6ee);
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 24px 80px rgba(0,0,0,.18);
+  }
+  .modal-head{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:12px; }
+
+  @media (max-width: 600px){
+    .modal-card{ width:96vw; padding:12px; }
+    .modal-head{ flex-direction:column; align-items:stretch; }
+  }
+</style>
+
+<script>
+(function(){
+  const openBtn = document.getElementById("openAddVenue");
+  const modal = document.getElementById("addVenueModal");
+  const closeBtn = document.getElementById("closeAddVenue");
+  const focusEl = document.getElementById("venueName");
+
+  function openModal(){
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    setTimeout(() => focusEl && focusEl.focus(), 50);
+  }
+  function closeModal(){
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  openBtn && openBtn.addEventListener("click", openModal);
+  closeBtn && closeBtn.addEventListener("click", closeModal);
+
+  modal && modal.addEventListener("click", (e) => {
+    if (e.target && e.target.dataset && e.target.dataset.close === "1") closeModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) closeModal();
+  });
+})();
+</script>
+{% endblock %}

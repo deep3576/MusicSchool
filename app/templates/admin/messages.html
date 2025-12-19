@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page">
+  <div class="page-head">
+    <h1>Admin · Messages</h1>
+
+  </div>
+
+  <div class="card admin-nav" style="margin-top:14px;">
+    <a href="{{ url_for('admin.messages') }}" class="active">Messages</a>
+    <a href="{{ url_for('admin.teachers') }}" >Teachers</a>
+    <a href="{{ url_for('admin.venues') }}">Venues</a>
+    <a href="{{ url_for('admin.syllabus') }}">Syllabus</a>
+    <a href="{{ url_for('admin.bookings') }}">Bookings</a>
+    <a href="{{ url_for('admin.users') }}">Users</a>
+  </div>
+
+
+  <div class="card">
+    {% if not items %}
+      <p class="muted">No messages yet.</p>
+    {% else %}
+      {% for m in items %}
+        <div class="card msg-card {% if m.is_replied %}replied{% endif %}" style="margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:950;">{{ m.subject }}</div>
+              <div class="muted">
+                {{ m.name }} · {{ m.email }}{% if m.phone %} · {{ m.phone }}{% endif %}
+              </div>
+            </div>
+            <div class="muted">
+              {{ m.created_at.strftime("%Y-%m-%d %H:%M") }}
+              {% if m.is_replied %}<span class="pill">Replied</span>{% endif %}
+            </div>
+          </div>
+
+          <div class="muted" style="margin-top:10px; white-space:pre-wrap;">{{ m.message }}</div>
+
+          <hr style="border:none; border-top:1px solid var(--border); margin:14px 0;">
+
+          <form method="post" action="{{ url_for('admin.reply_message', msg_id=m.id) }}" class="reply-box">
+            <div class="field">
+              <label>Reply Subject</label>
+              <input class="input" name="reply_subject" value="{{ m.reply_subject or ('Re: ' ~ m.subject) }}">
+            </div>
+            <div class="field">
+              <label>Reply Body</label>
+              <textarea class="input textarea" name="reply_body" placeholder="Write your reply...">{{ m.reply_body or '' }}</textarea>
+            </div>
+            <button class="btn" type="submit">Send Reply</button>
+          </form>
+
+          {% if m.is_replied %}
+            <div class="muted" style="margin-top:8px; font-size:13px;">
+              Replied at: {{ m.replied_at.strftime("%Y-%m-%d %H:%M") }}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
