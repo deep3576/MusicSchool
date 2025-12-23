@@ -4,56 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.env" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/TheSpiritSchool.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/auth_user.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/emailer.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/extensions.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/forms.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/routes/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/security.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/static/css/admin.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/static/css/style.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/about.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/admin/bookings.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/admin/login.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/admin/messages.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/admin/syllabus.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/admin/teacher_availability.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/admin/teachers.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/admin/users.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/admin/venues.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/admissions.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/auth/login.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/auth/signup.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/book.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/booking.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/contact.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/my_bookings.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/programs.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/check_db.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/db/releases/bookingSchool.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/db/releases/init.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/db/releases/signup.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/db/releases/teacher_class_duration.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/instance/config.ini" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/run.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/run.sh" afterDir="false" />
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="CSS Updations">
+      <change afterPath="$PROJECT_DIR$/app/static/css/student.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/email_test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/emailer.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/emailer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/auth/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/auth/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/auth/signup.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/auth/signup.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/instance/config.ini" beforeDir="false" afterPath="$PROJECT_DIR$/instance/config.ini" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,6 +30,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "deep3576"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/deep3576/MusicSchool.git",
+    "accountId": "ac9754b7-2fc5-43e8-a5de-8a037b67699d"
+  }
+}]]></component>
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 3
 }]]></component>
@@ -83,6 +55,8 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python.admin.executor": "Run",
     "Python.check_db.executor": "Run",
+    "Python.email_test.executor": "Run",
+    "Python.emailer.executor": "Run",
     "Python.models.executor": "Run",
     "Python.run.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -110,6 +84,19 @@
       <option name="presentableId" value="Default" />
       <updated>1765763658647</updated>
     </task>
+    <task id="LOCAL-00001" summary="CSS Updations">
+      <option name="closed" value="true" />
+      <created>1766117179832</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1766117179832</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="CSS Updations" />
+    <option name="LAST_COMMIT_MESSAGE" value="CSS Updations" />
   </component>
 </project>

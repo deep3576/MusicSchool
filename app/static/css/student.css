@@ -1,0 +1,91 @@
+/* Student theme: light orange (only for logged-in customers) */
+
+body.student{
+  background:
+    radial-gradient(900px 520px at 12% 0%, rgba(255, 155, 70, .18), transparent 55%),
+    radial-gradient(900px 520px at 88% 0%, rgba(255, 205, 140, .18), transparent 55%),
+    #fffaf3;
+  color: #1a120b;
+}
+
+/* Topbar orange tint */
+body.student .topbar{
+  background: rgba(255,255,255,.78);
+  border-bottom: 1px solid rgba(120, 70, 20, .14);
+  backdrop-filter: blur(10px);
+}
+
+/* Brand bubble becomes orange */
+body.student .brand::before{
+  content:"☀";
+  background: linear-gradient(135deg, rgba(255,155,70,.20), rgba(255,205,140,.22));
+  border: 1px solid rgba(120,70,20,.14);
+}
+
+/* Nav hover orange */
+body.student .nav a:hover{
+  background: rgba(255,155,70,.10);
+  border-color: rgba(255,155,70,.22);
+}
+
+/* Cards slightly warmer */
+body.student .card{
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(120,70,20,.14);
+  box-shadow: 0 16px 55px rgba(120,70,20,.10);
+}
+
+/* Buttons orange */
+body.student .btn{
+  border-color: rgba(255,155,70,.35);
+  background: linear-gradient(135deg, #ff8f3d, #ffb36a);
+  box-shadow: 0 12px 26px rgba(255,155,70,.22);
+}
+body.student .btn:hover{
+  filter: brightness(1.02);
+  transform: translateY(-1px);
+}
+body.student .btn:active{
+  transform: translateY(0);
+}
+
+/* Secondary buttons remain clean */
+body.student .btn.secondary{
+  background: rgba(255,255,255,.85);
+  color: #1a120b;
+  border-color: rgba(120,70,20,.14);
+  box-shadow:none;
+}
+body.student .btn.secondary:hover{
+  background: rgba(255,255,255,.98);
+}
+
+/* Inputs orange focus */
+body.student .input{
+  border-color: rgba(120,70,20,.14);
+  background: rgba(255,255,255,.92);
+}
+body.student .input:focus{
+  border-color: rgba(255,155,70,.55);
+  box-shadow: 0 0 0 4px rgba(255,155,70,.14);
+}
+
+/* Muted text warmer */
+body.student .muted{
+  color: rgba(26,18,11,.62);
+}
+
+/* Flash messages */
+body.student .flash{
+  border-color: rgba(120,70,20,.14);
+  background: rgba(255,255,255,.78);
+}
+body.student .flash.success{ border-color: rgba(40,170,90,.30); }
+body.student .flash.danger{ border-color: rgba(220,60,60,.30); }
+body.student .flash.warning{ border-color: rgba(230,170,40,.34); }
+
+/* Booking calendar toolbar on small devices stays readable */
+@media (max-width: 600px){
+  body.student .btn{ width: 100%; }
+  body.student .btn.secondary{ width: 100%; }
+}

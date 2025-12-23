@@ -4,24 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>{{ title or "The Spirit School" }}</title>
+  <title>{{ title or "The Rhythm School" }}</title>
 
-  {# Your existing CSS file (keep the filename you already use) #}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+ <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
 {% if request.blueprint == 'admin' %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% elif current_user.is_authenticated and not current_user.is_admin %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/student.css') }}">
 {% endif %}
 
   {% block head %}{% endblock %}
 </head>
 
-<body class="{% if request.blueprint == 'admin' %}admin{% endif %}">
+<body class="{% if request.blueprint == 'admin' %}admin{% elif current_user.is_authenticated and not current_user.is_admin %}student{% endif %}">
+
 
   <header class="topbar">
     <div class="wrap topbar-inner">
       <a class="brand" href="{{ url_for('main.index') }}">
-        TheSpiritSchool.ca
+        TheRhythmSchool.ca
       </a>
 
       <nav class="nav">
