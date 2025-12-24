@@ -1,10 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="page">
-  <div class="page-head">
-    <h1>Admin · Users</h1>
+  <div class="admin-head">
+    <div>
+      <h1 style="margin:0;">Users</h1>
+      <p class="muted" style="margin:6px 0 0;">Search and edit users. Assign class per student here.</p>
+    </div>
+
+    <form method="get" class="admin-search">
+      <input class="input" type="text" name="q" value="{{ q or '' }}" placeholder="Search name, email, phone">
+      <button class="btn" type="submit">Search</button>
+      {% if q %}<a class="btn secondary" href="{{ url_for('admin.users') }}">Clear</a>{% endif %}
+    </form>
   </div>
 
+
+  {# Admin navigation (keep your existing links if you have them) #}
   <div class="card admin-nav" style="margin-top:14px;">
     <a href="{{ url_for('admin.messages') }}">Messages</a>
     <a href="{{ url_for('admin.teachers') }}" >Teachers</a>
@@ -14,55 +25,53 @@
     <a href="{{ url_for('admin.users') }}" class="active">Users</a>
   </div>
 
+
   <div class="card">
-    <h3 style="margin-top:0;">Create User</h3>
-    <form method="post" action="{{ url_for('admin.user_create') }}" class="form">
-      <div class="row2">
-        <div class="field">
-          <label>Email</label>
-          <input class="input" name="email" required>
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <input class="input" name="password" type="password" required>
-        </div>
+    {% if not items %}
+      <p class="muted" style="margin:0;">No users found.</p>
+    {% else %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Assigned Class</th>
+              <th>Phone</th>
+              <th style="width:120px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in items %}
+              <tr>
+                <td style="font-weight:900;">{{ u.name }}</td>
+                <td>{{ u.email }}</td>
+                <td><span class="pill">{{ u.role }}</span></td>
+                <td>{{ u.class_label }}</td>
+                <td>{{ u.phone }}</td>
+                <td>
+                  <a class="btn small" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Edit</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-      <div class="field">
-        <label>Role</label>
-        <select class="input" name="role">
-          <option value="customer">customer</option>
-          <option value="admin">admin</option>
-        </select>
-      </div>
-      <button class="btn" type="submit">Create</button>
-    </form>
-  </div>
-
-  <div class="card" style="margin-top:14px;">
-    <h3 style="margin-top:0;">Users</h3>
-    {% for u in items %}
-      <div class="card" style="box-shadow:none; border:1px solid var(--border); margin-bottom:10px;">
-        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:950;">
-              {{ u.email }}
-              <span class="pill">{{ u.role }}</span>
-            </div>
-            <div class="muted">
-              {{ u.full_name }}{% if u.phone %} · {{ u.phone }}{% endif %}
-            </div>
-          </div>
-
-          <form method="post" action="{{ url_for('admin.user_set_role', user_id=u.id) }}" style="display:flex; gap:10px; align-items:center;">
-            <select class="input" name="role" style="width:160px;">
-              <option value="customer" {% if u.role=='customer' %}selected{% endif %}>customer</option>
-              <option value="admin" {% if u.role=='admin' %}selected{% endif %}>admin</option>
-            </select>
-            <button class="btn secondary" type="submit">Update</button>
-          </form>
-        </div>
-      </div>
-    {% endfor %}
+    {% endif %}
   </div>
 </section>
+
+<style>
+  .admin-head{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .admin-search{ display:flex; gap:8px; flex-wrap:wrap; }
+  .table-wrap{ overflow:auto; }
+  .table{ width:100%; border-collapse: collapse; }
+  .table th, .table td{ padding:10px 12px; border-bottom:1px solid var(--border,#e6e6ee); }
+  .pill{ padding:3px 10px; border-radius:999px; border:1px solid var(--border,#e6e6ee); font-weight:950; font-size:12px; }
+  .btn.small{ padding:6px 10px; font-size:13px; }
+  @media (max-width: 520px){
+    .admin-search .input{ width:100%; }
+  }
+</style>
 {% endblock %}

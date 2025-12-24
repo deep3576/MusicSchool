@@ -5,7 +5,7 @@
 <section class="page">
   <div class="page-head" style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
     <div>
-      <h1 style="margin:0;">Admin · Teachers</h1>
+      <h1 style="margin:0;">Teachers</h1>
       <p class="muted" style="margin:6px 0 0;">Create teachers, set class duration, and manage availability slots.</p>
     </div>
 
@@ -173,6 +173,26 @@
         <input type="checkbox" name="is_active" value="1" checked>
         <span class="muted">Active</span>
       </label>
+
+      <div>
+          <label class="muted">Start_Shift_Time</label>
+          <input class="input" type="Time" name="shift_start_time" id="winStart" required>
+      </div>
+
+      <div>
+          <label class="muted">End_Shift_Time</label>
+          <input class="input" type="Time" name="shift_end_time" id="winEnd" required>
+        </div>
+
+      <div>
+          <label class="muted">Break_Start_Time</label>
+          <input class="input" type="Time" name="break_start_time"  required>
+        </div>
+
+      <div>
+          <label class="muted">Break_End_Time</label>
+          <input class="input" type="Time" name="break_end_time"  required>
+        </div>
 
       <button class="btn" type="submit" style="margin-top:6px;">Create Teacher</button>
     </form>

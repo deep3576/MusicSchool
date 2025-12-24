@@ -1,6 +1,8 @@
-from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField
-from wtforms.validators import DataRequired, Email, Length
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField
+from wtforms.validators import DataRequired, Email, Length, Optional
+
 
 class SignupForm(FlaskForm):
     first_name = StringField("First Name", validators=[DataRequired(), Length(max=80)])
@@ -18,3 +20,13 @@ class SignupForm(FlaskForm):
 class LoginForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired(), Email(), Length(max=255)])
     password = PasswordField("Password", validators=[DataRequired(), Length(min=6, max=128)])
+
+
+
+
+class ContactForm(FlaskForm):
+    name = StringField("Name", validators=[DataRequired(), Length(max=120)])
+    email = StringField("Email", validators=[DataRequired(), Email(), Length(max=160)])
+    phone = StringField("Phone", validators=[Optional(), Length(max=40)])
+    subject = StringField("Subject", validators=[DataRequired(), Length(max=160)])
+    message = TextAreaField("Message", validators=[DataRequired(), Length(min=5, max=5000)])

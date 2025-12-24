@@ -25,6 +25,10 @@ class AppUser(UserMixin):
     def is_admin(self) -> bool:
         return (self.role or "").lower() == "admin"
 
+    @property
+    def is_customer(self) -> bool:
+        return (self.role or "").lower() == "customer"
+
 
 def get_user_by_id(user_id: int) -> AppUser | None:
     row = db.session.execute(text("""

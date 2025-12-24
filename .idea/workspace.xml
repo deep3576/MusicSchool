@@ -4,16 +4,24 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="CSS Updations">
-      <change afterPath="$PROJECT_DIR$/app/static/css/student.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/email_test.py" afterDir="false" />
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="Emailer Fixed and Working &#10;therythmschool@gmail.com">
+      <change afterPath="$PROJECT_DIR$/app/templates/admin/user_edit.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/db/releases/Teacher_availablity.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/emailer.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/emailer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/auth/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/auth/login.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/auth/signup.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/auth/signup.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/auth_user.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/auth_user.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/bookings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/bookings.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/messages.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/messages.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/syllabus.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/syllabus.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/teachers.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/teachers.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/users.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/users.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/venues.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/venues.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/instance/config.ini" beforeDir="false" afterPath="$PROJECT_DIR$/instance/config.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/book.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/book.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/booking.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/booking.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/my_bookings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/my_bookings.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,21 +38,21 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "deep3576"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;deep3576&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/deep3576/MusicSchool.git",
-    "accountId": "ac9754b7-2fc5-43e8-a5de-8a037b67699d"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/deep3576/MusicSchool.git&quot;,
+    &quot;accountId&quot;: &quot;ac9754b7-2fc5-43e8-a5de-8a037b67699d&quot;
   }
-}]]></component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 3
-}]]></component>
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3
+}</component>
   <component name="ProjectId" id="36rTOWUomZUfAyjacCCJWwg3hWP" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -57,11 +65,13 @@
     "Python.check_db.executor": "Run",
     "Python.email_test.executor": "Run",
     "Python.emailer.executor": "Run",
+    "Python.main.executor": "Run",
     "Python.models.executor": "Run",
     "Python.run.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main"
+    "git-widget-placeholder": "main",
+    "settings.editor.selected.configurable": "preferences.lookFeel"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -92,11 +102,20 @@
       <option name="project" value="LOCAL" />
       <updated>1766117179832</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Emailer Fixed and Working &#10;therythmschool@gmail.com">
+      <option name="closed" value="true" />
+      <created>1766468659755</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1766468659755</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="CSS Updations" />
-    <option name="LAST_COMMIT_MESSAGE" value="CSS Updations" />
+    <MESSAGE value="Emailer Fixed and Working &#10;therythmschool@gmail.com" />
+    <option name="LAST_COMMIT_MESSAGE" value="Emailer Fixed and Working &#10;therythmschool@gmail.com" />
   </component>
 </project>

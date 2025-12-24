@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page">
+  <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
+    <div>
+      <h1 style="margin:0;">Edit User</h1>
+      <p class="muted" style="margin:6px 0 0;">{{ u.full_name }} · ID {{ u.id }}</p>
+    </div>
+    <a class="btn secondary" href="{{ url_for('admin.users') }}">Back</a>
+  </div>
+
+  <form method="post" class="card form-card" style="margin-top:12px;">
+    <div class="grid">
+      <div>
+        <label class="label">Email</label>
+        <input class="input" name="email" value="{{ u.email or '' }}" required>
+      </div>
+
+      <div>
+        <label class="label">Role</label>
+        <select class="input" name="role">
+          <option value="customer" {% if u.role == 'customer' %}selected{% endif %}>customer</option>
+          <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>admin</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="label">First Name</label>
+        <input class="input" name="first_name" value="{{ u.first_name or '' }}">
+      </div>
+
+      <div>
+        <label class="label">Last Name</label>
+        <input class="input" name="last_name" value="{{ u.last_name or '' }}">
+      </div>
+
+      <div>
+        <label class="label">Phone</label>
+        <input class="input" name="phone" value="{{ u.phone or '' }}">
+      </div>
+
+      <div>
+        <label class="label">Assigned Class</label>
+        <select class="input" name="assigned_class_id">
+          <option value="" {% if not u.assigned_class_id %}selected{% endif %}>— None —</option>
+          {% for c in classes %}
+            <option value="{{ c.id }}" {% if u.assigned_class_id == c.id %}selected{% endif %}>
+              {{ c.label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="label">Address 1</label>
+        <input class="input" name="address_1" value="{{ u.address_1 or '' }}">
+      </div>
+
+      <div>
+        <label class="label">Address 2</label>
+        <input class="input" name="address_2" value="{{ u.address_2 or '' }}">
+      </div>
+
+      <div>
+        <label class="label">City</label>
+        <input class="input" name="city" value="{{ u.city or '' }}">
+      </div>
+
+      <div>
+        <label class="label">Province</label>
+        <input class="input" name="province" value="{{ u.province or '' }}">
+      </div>
+
+      <div>
+        <label class="label">Postal Code</label>
+        <input class="input" name="postal_code" value="{{ u.postal_code or '' }}">
+      </div>
+
+      <div>
+        <label class="label">Country</label>
+        <input class="input" name="country" value="{{ u.country or '' }}">
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;">
+      <button class="btn" type="submit">Save Changes</button>
+      <a class="btn secondary" href="{{ url_for('admin.users') }}">Cancel</a>
+    </div>
+  </form>
+</section>
+
+<style>
+  .form-card{ padding: 12px; }
+  .label{ display:block; font-weight:950; margin: 0 0 6px; }
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  @media (max-width: 900px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}

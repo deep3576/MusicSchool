@@ -1,96 +1,436 @@
+{# app/templates/book.html #}
 {% extends "base.html" %}
+
 {% block content %}
-<section class="page">
-  <h1>Book a Class</h1>
-  <p class="lead">Pick any available time. A teacher will be assigned automatically.</p>
+<section class="page book-page">
+  <div class="book-head">
+    <div>
+      <h1 style="margin:0;">Book a Class</h1>
+      <p class="muted" style="margin:6px 0 0;">
+        Select a date, then pick a slot to book.
+      </p>
+    </div>
+
+    <div class="legend card">
+      <div class="legend-item"><span class="swatch sw-available"></span> Available</div>
+      <div class="legend-item"><span class="swatch sw-booked"></span> Not available</div>
+      <div class="legend-item"><span class="swatch sw-partial"></span> Partial</div>
+    </div>
+  </div>
 
   {% if not current_user.is_authenticated %}
-    <div class="card" style="margin-bottom:14px;">
-      <div style="font-weight:950;">Login Required</div>
+    <div class="card warn-card">
+      <div style="font-weight:950;">Login required to book</div>
       <div class="muted" style="margin-top:6px;">
-        Please <a href="{{ url_for('main.login') }}">login</a> or
-        <a href="{{ url_for('main.signup') }}">sign up</a> to book a class.
+        Please login to book a class.
+      </div>
+      <div style="margin-top:10px;">
+        <a class="btn" href="{{ url_for('main.login') }}">Login</a>
       </div>
     </div>
   {% endif %}
 
-  <div class="card">
-    <div id="calendar"></div>
-    <p class="muted" style="margin-top:10px;">Click an available slot to book.</p>
+  {% if not bounds %}
+    <div class="card">
+      <h3 style="margin:0 0 6px;">No schedule found</h3>
+      <p class="muted" style="margin:0;">
+        Availability hasn’t been added yet. Please check back later.
+      </p>
+    </div>
+  {% else %}
+
+  <div class="book-grid">
+    <!-- LEFT: Mini month calendar -->
+    <div class="card mini-cal-card">
+      <div class="mini-title">
+        <div style="font-weight:950;">Select Date</div>
+        <div class="muted" style="font-size:13px;">Days are color-coded.</div>
+      </div>
+      <div id="miniMonth"></div>
+    </div>
+
+    <!-- RIGHT: Slots for selected date -->
+    <div class="card slots-card">
+      <div class="slots-head">
+        <div>
+          <div style="font-weight:950; font-size:18px;">Slots for <span id="selectedDateLabel">—</span></div>
+          <div class="muted" style="font-size:13px;" id="selectedDateSub">Click a day to load slots.</div>
+        </div>
+        <div class="slots-stats" id="dayStats" style="display:none;"></div>
+      </div>
+
+      <div id="slotsList" class="slots-list">
+        <div class="muted">Select a day from the calendar.</div>
+      </div>
+    </div>
   </div>
+
+  <!-- Booking POST form -->
+  <form id="bookForm"
+        method="post"
+        action="{{ url_for('main.book_submit') }}"
+        style="position:absolute; left:-9999px; top:-9999px;">
+    <input type="hidden" name="availability_id" id="availability_id">
+    <input type="hidden" name="start_at" id="start_at">
+    <input type="hidden" name="end_at" id="end_at">
+    {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+  </form>
+
+  {% endif %}
 </section>
 
-<!-- Confirm Modal -->
-<div id="bookingModal" class="modal hidden" aria-hidden="true">
-  <div class="modal-backdrop"></div>
-  <div class="modal-card">
-    <div class="modal-head">
-      <div>
-        <div style="font-weight:950; font-size:18px;">Confirm Booking</div>
-        <div class="muted">Teacher will be assigned automatically.</div>
-      </div>
-      <button class="btn secondary" type="button" id="modalClose">Close</button>
-    </div>
+<style>
+  .book-page{ max-width: 1180px; margin: 0 auto; }
 
-    <div class="card" style="box-shadow:none; border:1px solid var(--border);">
-      <div style="font-weight:900;">Selected Slot</div>
-      <div class="muted" id="modalTime" style="margin-top:6px;"></div>
-    </div>
+  .book-head{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    justify-content:space-between;
+    margin-bottom: 12px;
+  }
 
-    <form method="post" action="{{ url_for('main.book_submit') }}" style="margin-top:12px;">
-      <input type="hidden" name="availability_id" id="fAvailabilityId">
-      <button class="btn" type="submit" style="width:100%;">Confirm Booking</button>
-    </form>
-  </div>
-</div>
+  .legend{
+    padding:10px 12px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .legend-item{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    font-size:13px;
+    color: var(--muted,#666);
+    font-weight:900;
+  }
+  .swatch{
+    width:14px; height:14px;
+    border-radius:6px;
+    border:1px solid rgba(0,0,0,.12);
+    display:inline-block;
+  }
+  .sw-available{ background: rgba(24,169,87,.20); border-color: rgba(24,169,87,.30); }
+  .sw-booked{ background: rgba(230,70,70,.20); border-color: rgba(230,70,70,.30); }
+  .sw-partial{
+    background: linear-gradient(135deg, rgba(24,169,87,.20) 0 50%, rgba(230,70,70,.20) 50% 100%);
+    border-color: rgba(0,0,0,.12);
+  }
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css">
+  .warn-card{
+    border: 1px solid rgba(230,70,70,.25);
+    background: rgba(230,70,70,.06);
+    margin-bottom: 12px;
+  }
+
+  .book-grid{
+    display:grid;
+    grid-template-columns: 360px 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .mini-cal-card{ padding: 12px; }
+  .mini-title{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+
+  .slots-card{ padding: 12px; }
+  .slots-head{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .slots-stats{
+    padding:8px 10px;
+    border-radius: 14px;
+    border:1px solid var(--border,#e6e6ee);
+    background: rgba(255,255,255,.72);
+    font-weight: 950;
+    font-size: 13px;
+  }
+
+  .slots-list{ display:grid; gap:10px; }
+
+  .slot-item{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid var(--border,#e6e6ee);
+    background: rgba(255,255,255,.78);
+  }
+  .slot-left{ display:grid; gap:6px; }
+  .slot-time{ font-weight: 950; font-size: 16px; }
+
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border,#e6e6ee);
+    font-weight: 950;
+    font-size: 12px;
+    background: rgba(255,255,255,.7);
+  }
+  .badge.ok{ border-color: rgba(24,169,87,.35); background: rgba(24,169,87,.12); }
+  .badge.off{ border-color: rgba(230,70,70,.35); background: rgba(230,70,70,.12); }
+
+  /* FullCalendar mini sizing */
+  #miniMonth .fc{ font-size: 12px; }
+  #miniMonth .fc-toolbar-title{ font-size: 14px; font-weight: 950; }
+  #miniMonth .fc .fc-button{ padding: 6px 8px; font-size: 12px; }
+
+  /* Day coloring */
+  .day-full-available .fc-daygrid-day-frame{
+    background: rgba(24,169,87,.14);
+    border-radius: 12px;
+  }
+  .day-full-booked .fc-daygrid-day-frame{
+    background: rgba(230,70,70,.14);
+    border-radius: 12px;
+  }
+  .day-partial .fc-daygrid-day-frame{
+    background: linear-gradient(135deg, rgba(24,169,87,.14) 0 50%, rgba(230,70,70,.14) 50% 100%);
+    border-radius: 12px;
+  }
+
+  /* Slot tint */
+  .slot-available{
+    border-color: rgba(24,169,87,.22) !important;
+    background: rgba(24,169,87,.06) !important;
+  }
+  .slot-booked{
+    border-color: rgba(230,70,70,.22) !important;
+    background: rgba(230,70,70,.06) !important;
+    opacity: .95;
+  }
+
+  /* Responsive */
+  @media (max-width: 980px){
+    .book-grid{ grid-template-columns: 1fr; }
+  }
+  @media (max-width: 420px){
+    .slots-stats{ width: 100%; text-align:center; }
+    .legend{ width: 100%; }
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+{% if bounds %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 
 <script>
 (function(){
-  const modal = document.getElementById("bookingModal");
-  const modalClose = document.getElementById("modalClose");
-  const modalTime = document.getElementById("modalTime");
-  const fAvailabilityId = document.getElementById("fAvailabilityId");
+  const minDate = "{{ bounds.min_date }}";
+  const maxDate = "{{ bounds.max_date }}";
+
+  function addDays(isoDate, days){
+    const d = new Date(isoDate + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0,10);
+  }
+  const endExclusive = addDays(maxDate, 1);
+
+  const summaryUrl = "{{ url_for('main.api_availability_summary') }}";
+  const slotsUrl = "{{ url_for('main.api_all_availability') }}";
   const isLoggedIn = {{ "true" if current_user.is_authenticated else "false" }};
 
-  function openModal(){ modal.classList.remove("hidden"); }
-  function closeModal(){ modal.classList.add("hidden"); }
-  modalClose.addEventListener("click", closeModal);
-  modal.querySelector(".modal-backdrop").addEventListener("click", closeModal);
+  const selectedDateLabel = document.getElementById("selectedDateLabel");
+  const selectedDateSub = document.getElementById("selectedDateSub");
+  const slotsList = document.getElementById("slotsList");
+  const dayStats = document.getElementById("dayStats");
 
-  const calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
-    initialView: "timeGridWeek",
-    height: "auto",
-    nowIndicator: true,
-    allDaySlot: false,
-    slotMinTime: "07:00:00",
-    slotMaxTime: "22:00:00",
-    headerToolbar: { left:"prev,next today", center:"title", right:"dayGridMonth,timeGridWeek,timeGridDay" },
+  const dayMap = new Map(); // date -> {available,total}
 
-    events: function(fetchInfo, success, failure){
-      const url = `/api/availability?start=${encodeURIComponent(fetchInfo.startStr)}&end=${encodeURIComponent(fetchInfo.endStr)}`;
-      fetch(url).then(r => r.json()).then(success).catch(failure);
-    },
+  function fmtTime(d){
+    return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+  }
 
-    eventTimeFormat: { hour: "numeric", minute: "2-digit", meridiem: "short" },
-    eventContent: function(arg){
-      return { html: `<div style="font-weight:950;">${arg.timeText}</div><div style="opacity:.85;">Available</div>` };
-    },
+  function fmtDatePretty(iso){
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString([], { weekday:"long", year:"numeric", month:"short", day:"numeric" });
+  }
 
-    eventClick: function(info){
-      if(!isLoggedIn){
-        alert("Please login/signup to book.");
-        return;
-      }
-      fAvailabilityId.value = info.event.id;
-      modalTime.textContent = `${info.event.start.toLocaleString()} — ${info.event.end.toLocaleString()}`;
-      openModal();
+  // Send local ISO without "Z" (prevents timezone shifting on backend)
+  function toLocalIsoNoZ(dt){
+    const pad = (n) => String(n).padStart(2,"0");
+    return dt.getFullYear() + "-" + pad(dt.getMonth()+1) + "-" + pad(dt.getDate())
+      + "T" + pad(dt.getHours()) + ":" + pad(dt.getMinutes()) + ":" + pad(dt.getSeconds());
+  }
+
+  async function loadSummary(){
+    const start = minDate + "T00:00:00";
+    const end = endExclusive + "T00:00:00";
+    const resp = await fetch(summaryUrl + "?start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end));
+    const data = await resp.json();
+
+    dayMap.clear();
+    for (const r of data){
+      dayMap.set(r.date, { available: Number(r.available||0), total: Number(r.total||0) });
     }
-  });
+  }
 
-  calendar.render();
+  function applyDayClass(el, dateStr){
+    const info = dayMap.get(dateStr);
+    el.classList.remove("day-full-available","day-full-booked","day-partial");
+
+    if (!info || info.total <= 0) return;
+
+    if (info.available <= 0) el.classList.add("day-full-booked");
+    else if (info.available >= info.total) el.classList.add("day-full-available");
+    else el.classList.add("day-partial");
+  }
+
+  async function loadSlotsForDate(dateStr){
+    selectedDateLabel.textContent = fmtDatePretty(dateStr);
+    selectedDateSub.textContent = "Loading...";
+    slotsList.innerHTML = "";
+
+    const start = dateStr + "T00:00:00";
+    const end = addDays(dateStr, 1) + "T00:00:00";
+
+    const resp = await fetch(slotsUrl + "?start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end));
+    const events = await resp.json();
+
+    const m = dayMap.get(dateStr);
+    if (m && m.total > 0){
+      dayStats.style.display = "";
+      dayStats.textContent = `${m.available} available / ${m.total} total`;
+    } else {
+      dayStats.style.display = "none";
+    }
+
+    if (!events || events.length === 0){
+      selectedDateSub.textContent = "No slots for this day.";
+      slotsList.innerHTML = `<div class="muted">No slots for this day.</div>`;
+      return;
+    }
+
+    selectedDateSub.textContent = isLoggedIn ? "Select a slot to book." : "Login to book.";
+
+    const sorted = events.slice().sort((a,b)=> new Date(a.start) - new Date(b.start));
+
+    for (const e of sorted){
+      const s = new Date(e.start);
+      const en = new Date(e.end);
+
+      const isAvailable =
+        (e.extendedProps && typeof e.extendedProps.is_available !== "undefined")
+          ? !!e.extendedProps.is_available
+          : (String(e.title || "").toLowerCase().includes("available"));
+
+      const freeId =
+        (e.extendedProps && (e.extendedProps.availability_id || e.extendedProps.free_id || e.extendedProps.slot_id))
+        || null;
+
+      const card = document.createElement("div");
+      card.className = "slot-item " + (isAvailable ? "slot-available" : "slot-booked");
+
+      const left = document.createElement("div");
+      left.className = "slot-left";
+      left.innerHTML = `<div class="slot-time">${fmtTime(s)} — ${fmtTime(en)}</div>`;
+
+      const right = document.createElement("div");
+      right.style.display = "grid";
+      right.style.gap = "8px";
+      right.style.justifyItems = "end";
+
+      const badge = document.createElement("div");
+      badge.className = "badge " + (isAvailable ? "ok" : "off");
+      badge.textContent = isAvailable ? "Available" : "Not available";
+      right.appendChild(badge);
+
+      // ✅ FIX: show button only when actionable (prevents "Not available" twice)
+      if (!isLoggedIn) {
+        const btn = document.createElement("a");
+        btn.className = "btn secondary";
+        btn.href = "{{ url_for('main.login') }}";
+        btn.textContent = "Login to book";
+        right.appendChild(btn);
+
+      } else if (isAvailable) {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.type = "button";
+        btn.textContent = "Book";
+
+        btn.addEventListener("click", () => {
+          const ok = confirm("Book this slot?\n" + s.toLocaleString());
+          if (!ok) return;
+
+          document.getElementById("availability_id").value = freeId ? String(freeId) : "";
+          document.getElementById("start_at").value = toLocalIsoNoZ(s);
+          document.getElementById("end_at").value = toLocalIsoNoZ(en);
+
+          console.log("Submitting booking:", {
+            availability_id: document.getElementById("availability_id").value,
+            start_at: document.getElementById("start_at").value,
+            end_at: document.getElementById("end_at").value
+          });
+
+          document.getElementById("bookForm").submit();
+        });
+
+        right.appendChild(btn);
+      }
+
+      card.appendChild(left);
+      card.appendChild(right);
+      slotsList.appendChild(card);
+    }
+  }
+
+  (async function init(){
+    try { await loadSummary(); } catch(e){ console.error("Summary load failed:", e); }
+
+    const miniEl = document.getElementById("miniMonth");
+    const mini = new FullCalendar.Calendar(miniEl, {
+      initialView: "dayGridMonth",
+      initialDate: minDate,
+
+      fixedWeekCount: false,
+      showNonCurrentDates: false,
+      height: "auto",
+      validRange: { start: minDate, end: endExclusive },
+
+      headerToolbar: { left: "prev,next", center: "title", right: "today" },
+
+      dayCellDidMount: function(info){
+        const dateStr = info.date.toISOString().slice(0,10);
+        applyDayClass(info.el, dateStr);
+      },
+      datesSet: function(){
+        const dayEls = miniEl.querySelectorAll(".fc-daygrid-day");
+        dayEls.forEach(el => {
+          const d = el.getAttribute("data-date");
+          if (d) applyDayClass(el, d);
+        });
+      },
+
+      dateClick: function(info){
+        loadSlotsForDate(info.dateStr);
+      }
+    });
+
+    mini.render();
+    loadSlotsForDate(minDate);
+  })();
+
 })();
 </script>
+{% endif %}
 {% endblock %}

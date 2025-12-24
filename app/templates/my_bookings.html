@@ -1,29 +1,85 @@
+{# app/templates/my_bookings.html #}
 {% extends "base.html" %}
+
 {% block content %}
 <section class="page">
-  <h1>My Bookings</h1>
-  <p class="lead">Your booked classes (latest first).</p>
+  <h1 style="margin:10px 0;">My Bookings</h1>
+  <p class="muted" style="margin:0 0 12px;">Your booked classes (latest first).</p>
 
   <div class="card">
     {% if not items %}
-      <p class="muted">No bookings yet.</p>
+      <p class="muted" style="margin:0;">No bookings yet.</p>
     {% else %}
       {% for b in items %}
-        <div class="card" style="box-shadow:none; border:1px solid var(--border); margin-bottom:10px;">
-          <div style="font-weight:950;">
-            Teacher: {{ b.teacher.name }}
-            {% if b.status != 'BOOKED' %}<span class="pill">{{ b.status }}</span>{% endif %}
+        <div class="card booking-item" style="box-shadow:none; border:1px solid var(--border,#e6e6ee); margin-bottom:10px;">
+          <div class="booking-head">
+            <div style="font-weight:950;">
+              Teacher: {{ b.teacher_name }}
+            </div>
+
+            <div class="status-pill {% if b.status == 'BOOKED' %}ok{% endif %}">
+              {{ b.status }}
+            </div>
           </div>
-          <div class="muted" style="margin-top:6px;">
-            Time: {{ b.availability.start_at.strftime("%Y-%m-%d %H:%M") }} — {{ b.availability.end_at.strftime("%H:%M") }}
+
+          <div class="muted" style="margin-top:8px;">
+            Time:
+            {{ b.start_at.strftime("%Y-%m-%d %H:%M") }}
+            —
+            {{ b.end_at.strftime("%H:%M") }}
           </div>
+
           <div class="muted" style="margin-top:6px;">
-            {% if b.class_level %}Level: {{ b.class_level.code }}{% else %}Level: —{% endif %}
-            · {% if b.venue %}Venue: {{ b.venue.name }}{% else %}Venue: —{% endif %}
+            Level:
+            {% if b.class_label %}
+              {{ b.class_label }}
+            {% else %}
+              —
+            {% endif %}
+            · Venue:
+            {% if b.venue_name %}
+              {{ b.venue_name }}
+            {% else %}
+              —
+            {% endif %}
+          </div>
+
+          <div class="muted" style="margin-top:6px; font-size:12px;">
+            Booking ID: {{ b.id }} · Created: {{ b.created_at.strftime("%Y-%m-%d %H:%M") }}
           </div>
         </div>
       {% endfor %}
     {% endif %}
   </div>
 </section>
+
+<style>
+  .booking-item{ border-radius: 16px; padding: 12px; }
+  .booking-head{
+    display:flex;
+    justify-content: space-between;
+    gap:10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border,#e6e6ee);
+    background: rgba(255,255,255,.7);
+    font-weight: 950;
+    font-size: 12px;
+  }
+  .status-pill.ok{
+    border-color: rgba(24,169,87,.30);
+    background: rgba(24,169,87,.10);
+  }
+
+  @media (max-width: 420px){
+    .status-pill{ width: 100%; }
+  }
+</style>
 {% endblock %}

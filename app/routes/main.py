@@ -1,6 +1,5 @@
-from datetime import datetime
 from types import SimpleNamespace
-
+from datetime import datetime, timedelta, time
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import text
@@ -33,9 +32,85 @@ def index():
     return render_template("index.html", title="The Spirit School")
 
 
+
+
+def _time_to_hms(v) -> str:
+    """MySQL TIME may come as datetime.time OR datetime.timedelta."""
+    if v is None:
+        return "00:00:00"
+    if isinstance(v, time):
+        return v.strftime("%H:%M:%S")
+    if isinstance(v, timedelta):
+        total = int(v.total_seconds()) % (24 * 3600)
+        h = total // 3600
+        m = (total % 3600) // 60
+        s = total % 60
+        return f"{h:02d}:{m:02d}:{s:02d}"
+    # fallback (string etc.)
+    return str(v)
+
 @main_bp.get("/book")
 def book():
-    return render_template("booking.html", title="Book a Class")
+    # NOTE: no ta.is_booked filter -> includes both Available + Booked windows
+    row = db.session.execute(text("""
+        SELECT
+          MIN(ta.start_at) AS min_start_dt,
+          MAX(ta.end_at)   AS max_end_dt,
+          MIN(TIME(ta.start_at)) AS min_time_day,
+          MAX(TIME(ta.end_at))   AS max_time_day
+        FROM teacher_availability ta
+        JOIN teacher t ON t.id = ta.teacher_id
+        WHERE t.is_active = 1
+          AND ta.start_at >= NOW()
+    """)).mappings().first()
+
+    bounds = None
+    if row and row["min_start_dt"] and row["max_end_dt"]:
+        min_start_dt = row["min_start_dt"]
+        max_end_dt   = row["max_end_dt"]
+
+        bounds = {
+            "min_date": min_start_dt.date().isoformat(),         # YYYY-MM-DD
+            "max_date": max_end_dt.date().isoformat(),           # YYYY-MM-DD
+
+            # IMPORTANT: use time-of-day min/max across ALL slots
+            "min_time": _time_to_hms(row["min_time_day"]),       # HH:MM:SS
+            "max_time": _time_to_hms(row["max_time_day"]),       # HH:MM:SS
+        }
+
+    return render_template("book.html", bounds=bounds, title="Book")
+
+
+from ..forms import ContactForm
+@main_bp.route("/contact", methods=["GET", "POST"])
+def contact():
+    form = ContactForm()
+
+    if form.validate_on_submit():
+        try:
+            db.session.execute(text("""
+                INSERT INTO contact_message
+                  (name, email, phone, subject, message, created_at)
+                VALUES
+                  (:name, :email, :phone, :subject, :message, NOW())
+            """), {
+                "name": (form.name.data or "").strip(),
+                "email": (form.email.data or "").strip().lower(),
+                "phone": (form.phone.data or "").strip() or None,
+                "subject": (form.subject.data or "").strip(),
+                "message": (form.message.data or "").strip(),
+            })
+            db.session.commit()
+
+            flash("Message sent! We’ll reply soon.", "success")
+            return redirect(url_for("main.contact"))
+
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("contact submit failed")
+            flash("Could not send message. Please try again.", "danger")
+
+    return render_template("contact.html", title="Contact", form=form)
 
 
 @main_bp.get("/api/availability")
@@ -49,87 +124,199 @@ def api_all_availability():
     end_dt = _parse_fc_iso(end)
 
     rows = db.session.execute(text("""
-        SELECT ta.id, ta.start_at, ta.end_at
+        SELECT
+          ta.start_at,
+          ta.end_at,
+          SUM(CASE WHEN ta.is_booked = 0 THEN 1 ELSE 0 END) AS available_count,
+          COUNT(*) AS total_count
         FROM teacher_availability ta
         JOIN teacher t ON t.id = ta.teacher_id
-        WHERE ta.is_booked = 0
-          AND t.is_active = 1
+        WHERE t.is_active = 1
           AND ta.start_at < :end_dt
           AND ta.end_at > :start_dt
+        GROUP BY ta.start_at, ta.end_at
         ORDER BY ta.start_at ASC
     """), {"start_dt": start_dt, "end_dt": end_dt}).mappings().all()
 
+    events = []
+    for r in rows:
+        available_count = int(r["available_count"] or 0)
+        total_count = int(r["total_count"] or 0)
+        is_available = available_count > 0
+
+        events.append({
+            "id": f"{r['start_at'].isoformat()}__{r['end_at'].isoformat()}",
+            "title": "Available" if is_available else "Booked",
+            "start": r["start_at"].isoformat(),
+            "end": r["end_at"].isoformat(),
+            "extendedProps": {
+                "is_available": is_available,
+                "available_count": available_count,
+                "total_count": total_count
+            },
+            "classNames": ["slot-available" if is_available else "slot-booked"]
+        })
+
+    return jsonify(events)
+
+
+@main_bp.get("/api/availability/summary")
+def api_availability_summary():
+    start = request.args.get("start")
+    end = request.args.get("end")
+    if not start or not end:
+        return jsonify([])
+
+    start_dt = _parse_fc_iso(start)
+    end_dt = _parse_fc_iso(end)
+
+    rows = db.session.execute(text("""
+        SELECT
+          DATE(ta.start_at) AS d,
+          COUNT(*) AS total_slots,
+          SUM(CASE WHEN ta.is_booked = 0 THEN 1 ELSE 0 END) AS available_slots
+        FROM teacher_availability ta
+        JOIN teacher t ON t.id = ta.teacher_id
+        WHERE t.is_active = 1
+          AND ta.start_at < :end_dt
+          AND ta.end_at > :start_dt
+        GROUP BY DATE(ta.start_at)
+        ORDER BY d ASC
+    """), {"start_dt": start_dt, "end_dt": end_dt}).mappings().all()
+
     return jsonify([{
-        "id": r["id"],
-        "title": "Available",
-        "start": r["start_at"].isoformat(),
-        "end": r["end_at"].isoformat(),
+        "date": r["d"].isoformat() if hasattr(r["d"], "isoformat") else str(r["d"]),
+        "total": int(r["total_slots"] or 0),
+        "available": int(r["available_slots"] or 0),
     } for r in rows])
+
 
 
 @main_bp.post("/book/submit")
 @login_required
 def book_submit():
-    availability_id = int(request.form.get("availability_id") or 0)
-    if not availability_id:
+    raw_aid = (request.form.get("availability_id") or "").strip()
+    start_s = (request.form.get("start_at") or "").strip()
+    end_s = (request.form.get("end_at") or "").strip()
+
+    availability_id = int(raw_aid) if raw_aid.isdigit() else 0
+
+    def dbg(msg: str):
+        try:
+            current_app.logger.info(f"[book_submit] {msg}")
+        except Exception:
+            pass
+        print(f"[book_submit] {msg}")
+
+    if not availability_id and (not start_s or not end_s):
         flash("Please select a slot.", "danger")
         return redirect(url_for("main.book"))
 
     try:
-        with db.session.begin():
-            slot = db.session.execute(text("""
-                SELECT ta.id, ta.teacher_id, ta.venue_id, ta.start_at, ta.end_at, ta.is_booked,
-                       t.default_venue_id
-                FROM teacher_availability ta
-                JOIN teacher t ON t.id = ta.teacher_id
-                WHERE ta.id = :aid
-                FOR UPDATE
-            """), {"aid": availability_id}).mappings().first()
+        # ------------------------------------------------------------
+        # A) Booking by specific availability_id (direct)
+        # ------------------------------------------------------------
+        if availability_id:
+            dbg(f"booking by availability_id={availability_id}")
 
-            if not slot:
-                flash("Invalid slot selected.", "danger")
-                return redirect(url_for("main.book"))
-
-            if int(slot["is_booked"]) == 1:
-                flash("That slot is no longer available.", "danger")
-                return redirect(url_for("main.book"))
-
+            # Claim it atomically
             updated = db.session.execute(text("""
-                UPDATE teacher_availability
-                SET is_booked = 1
-                WHERE id = :aid AND is_booked = 0
+                UPDATE teacher_availability ta
+                JOIN teacher t ON t.id = ta.teacher_id
+                join user 
+                SET ta.is_booked = 1
+                WHERE ta.id = :aid
+                  AND ta.is_booked = 0
+                  AND t.is_active = 1
             """), {"aid": availability_id}).rowcount
 
             if updated != 1:
+                db.session.rollback()
+                flash("That slot is no longer available. Please pick another.", "warning")
+                return redirect(url_for("main.book"))
+
+            # Fetch details for booking insert
+            slot = db.session.execute(text("""
+                SELECT ta.id, ta.teacher_id,
+                       COALESCE(ta.venue_id, t.default_venue_id) AS venue_id
+                FROM teacher_availability ta
+                JOIN teacher t ON t.id = ta.teacher_id
+                WHERE ta.id = :aid
+                LIMIT 1
+            """), {"aid": availability_id}).mappings().first()
+
+            if not slot:
+                db.session.rollback()
+                flash("Invalid slot selected.", "danger")
+                return redirect(url_for("main.book"))
+
+        # ------------------------------------------------------------
+        # B) Booking by time-window (start_at/end_at) => pick any teacher
+        # ------------------------------------------------------------
+        else:
+            start_dt = _parse_fc_iso(start_s).replace(microsecond=0)
+            end_dt = _parse_fc_iso(end_s).replace(microsecond=0)
+            dbg(f"booking by window start={start_dt} end={end_dt}")
+
+            # Pick ONE available slot and lock it (this prevents double-booking)
+            slot = db.session.execute(text("""
+                SELECT ta.id, ta.teacher_id,
+                       COALESCE(ta.venue_id, t.default_venue_id) AS venue_id
+                FROM teacher_availability ta
+                JOIN teacher t ON t.id = ta.teacher_id
+                WHERE ta.is_booked = 0
+                  AND t.is_active = 1
+                  AND ta.start_at = :start_at
+                  AND ta.end_at   = :end_at
+                ORDER BY ta.id ASC
+                LIMIT 1
+                FOR UPDATE
+            """), {"start_at": start_dt, "end_at": end_dt}).mappings().first()
+
+            if not slot:
+                db.session.rollback()
+                flash("Not available for that time. Please choose another slot.", "warning")
+                return redirect(url_for("main.book"))
+
+            # Now claim it by id (simple single-table UPDATE; no ORDER BY)
+            updated = db.session.execute(text("""
+                UPDATE teacher_availability
+                SET is_booked = 1
+                WHERE id = :id AND is_booked = 0
+            """), {"id": slot["id"]}).rowcount
+
+            if updated != 1:
+                db.session.rollback()
                 flash("That slot was just taken. Please try another.", "warning")
                 return redirect(url_for("main.book"))
 
-            venue_id = slot["venue_id"] or slot["default_venue_id"]
+        # Insert booking row
+        db.session.execute(text("""
+            INSERT INTO booking
+              (teacher_id, availability_id, user_id,
+               student_name, student_email, student_phone,
+               class_level_id, venue_id, status, created_at)
+            VALUES
+              (:teacher_id, :availability_id, :user_id,
+               :student_name, :student_email, :student_phone,
+               NULL, :venue_id, 'BOOKED', NOW())
+        """), {
+            "teacher_id": slot["teacher_id"],
+            "availability_id": slot["id"],
+            "user_id": current_user.id,
+            "student_name": current_user.full_name,
+            "student_email": current_user.email,
+            "student_phone": getattr(current_user, "phone", None),
+            "venue_id": slot["venue_id"],
+        })
 
-            db.session.execute(text("""
-                INSERT INTO booking
-                (teacher_id, availability_id, user_id,
-                 student_name, student_email, student_phone,
-                 class_level_id, venue_id, status, created_at)
-                VALUES
-                (:teacher_id, :availability_id, :user_id,
-                 :student_name, :student_email, :student_phone,
-                 NULL, :venue_id, 'BOOKED', NOW())
-            """), {
-                "teacher_id": slot["teacher_id"],
-                "availability_id": availability_id,
-                "user_id": current_user.id,
-                "student_name": current_user.full_name,
-                "student_email": current_user.email,
-                "student_phone": getattr(current_user, "phone", None),
-                "venue_id": venue_id,
-            })
-
+        db.session.commit()
         flash("Booking confirmed!", "success")
         return redirect(url_for("main.my_bookings"))
 
-    except Exception:
+    except Exception as e:
         db.session.rollback()
+        dbg(f"ERROR: {repr(e)}")
         current_app.logger.exception("book_submit failed")
         flash("Booking failed. Please try again.", "danger")
         return redirect(url_for("main.book"))
