@@ -458,8 +458,9 @@ def teacher_availability(teacher_id):
         FROM teacher_availability ta
         LEFT JOIN venue v ON v.id = ta.venue_id
         WHERE ta.teacher_id = :tid
+        and ta.is_booked=1
         ORDER BY ta.start_at ASC
-        LIMIT 2000
+        LIMIT 200
     """), {"tid": teacher_id}).mappings().all()
 
     teacher_obj = _ns({

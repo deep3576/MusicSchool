@@ -1,0 +1,4 @@
+ALTER TABLE teacher
+ADD COLUMN venue_rule TEXT NOT NULL DEFAULT 'ALL';
+
+

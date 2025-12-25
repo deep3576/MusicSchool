@@ -416,3 +416,17 @@ img, video { max-width: 100%; height: auto; }
     font-size: 14px;
   }
 }
+
+
+.input{
+  width:100%;
+  padding:10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.9);
+  outline:none;
+
+  /* ✅ ADD THESE */
+  color: var(--text);
+  caret-color: var(--text);
+}

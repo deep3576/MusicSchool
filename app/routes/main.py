@@ -134,6 +134,7 @@ def api_all_availability():
         WHERE t.is_active = 1
           AND ta.start_at < :end_dt
           AND ta.end_at > :start_dt
+          and ta.start_at > (SELECT CURRENT_TIMESTAMP() - INTERVAL 5 HOUR)
         GROUP BY ta.start_at, ta.end_at
         ORDER BY ta.start_at ASC
     """), {"start_dt": start_dt, "end_dt": end_dt}).mappings().all()
@@ -180,6 +181,7 @@ def api_availability_summary():
         WHERE t.is_active = 1
           AND ta.start_at < :end_dt
           AND ta.end_at > :start_dt
+          AND ta.start_at > (SELECT CURRENT_TIMESTAMP() - INTERVAL 5 HOUR)
         GROUP BY DATE(ta.start_at)
         ORDER BY d ASC
     """), {"start_dt": start_dt, "end_dt": end_dt}).mappings().all()

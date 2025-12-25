@@ -4,24 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="Emailer Fixed and Working &#10;therythmschool@gmail.com">
-      <change afterPath="$PROJECT_DIR$/app/templates/admin/user_edit.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/db/releases/Teacher_availablity.sql" afterDir="false" />
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="updated on more pages">
+      <change afterPath="$PROJECT_DIR$/db/releases/Venue_handling.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/auth_user.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/auth_user.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/forms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/bookings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/bookings.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/messages.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/messages.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/syllabus.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/syllabus.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/teachers.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/teachers.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/users.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/users.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/venues.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/venues.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/static/css/admin.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/admin.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/static/css/student.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/student.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/static/css/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/style.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/book.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/book.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/booking.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/booking.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/my_bookings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/my_bookings.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -110,12 +102,21 @@
       <option name="project" value="LOCAL" />
       <updated>1766468659755</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="updated on more pages">
+      <option name="closed" value="true" />
+      <created>1766574687180</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1766574687180</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="CSS Updations" />
     <MESSAGE value="Emailer Fixed and Working &#10;therythmschool@gmail.com" />
-    <option name="LAST_COMMIT_MESSAGE" value="Emailer Fixed and Working &#10;therythmschool@gmail.com" />
+    <MESSAGE value="updated on more pages" />
+    <option name="LAST_COMMIT_MESSAGE" value="updated on more pages" />
   </component>
 </project>
