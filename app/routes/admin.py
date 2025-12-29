@@ -1,9 +1,6 @@
 from __future__ import annotations
 from datetime import datetime, date, time, timedelta
-from types import SimpleNamespace
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
-from sqlalchemy import text
-from ..extensions import db
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, has_request_context
 from ..security import admin_required
 from flask_login import current_user,logout_user, login_required
 from types import SimpleNamespace
@@ -11,26 +8,14 @@ from flask import render_template, request, redirect, url_for, flash, current_ap
 from sqlalchemy import text
 from ..extensions import db
 
-
-# Optional emailer
 try:
     from ..emailer import send_email
 except Exception:  # pragma: no cover
     send_email = None
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
-
-
 def _ns(d: dict) -> SimpleNamespace:
     return SimpleNamespace(**d)
-
-
-# -------------------- Messages --------------------
-
-from types import SimpleNamespace
-from flask import render_template, request, redirect, url_for, flash, current_app
-from sqlalchemy import text
-from ..extensions import db
 
 def _ns(d: dict) -> SimpleNamespace:
     return SimpleNamespace(**d)
@@ -533,7 +518,7 @@ def availability_create(teacher_id):
 
     # ---------- Config (can be made dynamic via form inputs later) ----------
     start_date = date.today() + timedelta(days=1)   # tomorrow
-    days = 7                                       # generate next 7 days
+    days = 30                                       # generate next 30 days
     default_duration = 45
 
     venue_id = request.form.get("venue_id")
@@ -710,81 +695,237 @@ def availability_create(teacher_id):
         flash("Could not create slots (some may already exist). Check logs.", "danger")
 
     return redirect(url_for("admin.teacher_availability", teacher_id=teacher_id))
+def max_iters_from_dates(date1, date2) -> int:
+    # normalize to date
+    if isinstance(date1, datetime):
+        date1 = date1.date()
+    if isinstance(date2, datetime):
+        date2 = date2.date()
+
+    days_diff = abs((date2 - date1).days)  # difference in whole days
+    return max(1, days_diff * 9)           # multiply by 9, minimum 1
 
 
-@admin_bp.post("/teachers/<int:teacher_id>/availability/bulk")
-@admin_required
-def availability_bulk(teacher_id):
-    start_date_s = request.form.get("start_date")
-    end_date_s = request.form.get("end_date")
-    start_time_s = request.form.get("start_time")
-    end_time_s = request.form.get("end_time")
-    venue_id = request.form.get("venue_id")
-    venue_id = int(venue_id) if venue_id else None
+def availability_auto_create(teacher_id: int) -> int:
+    # ---------- Debug helper ----------
+    def dbg(msg: str):
+        print(f"[availability_create] {msg}")
+        try:
+            current_app.logger.info(f"[availability_create] {msg}")
+        except Exception:
+            pass
 
-    dows = request.form.getlist("dow")  # 0=Mon ... 6=Sun
-    dows = set(int(x) for x in dows)
+    # ---------- Convert MySQL TIME values (often returned as timedelta) ----------
+    def to_time(v):
+        """
+        Accepts datetime.time | datetime.timedelta | 'HH:MM[:SS]' | None -> datetime.time | None
+        PyMySQL commonly returns MySQL TIME columns as datetime.timedelta.
+        """
+        if v is None:
+            return None
 
-    if not start_date_s or not end_date_s or not start_time_s or not end_time_s or not dows:
-        flash("Fill date range, start/end time, and select days.", "danger")
-        return redirect(url_for("admin.teacher_availability", teacher_id=teacher_id))
+        if isinstance(v, time):
+            return v
 
-    start_d = date.fromisoformat(start_date_s)
-    end_d = date.fromisoformat(end_date_s)
-    if end_d < start_d:
-        flash("End date must be after start date.", "danger")
-        return redirect(url_for("admin.teacher_availability", teacher_id=teacher_id))
+        if isinstance(v, timedelta):
+            total_seconds = int(v.total_seconds()) % (24 * 3600)
+            h = total_seconds // 3600
+            m = (total_seconds % 3600) // 60
+            s = total_seconds % 60
+            return time(hour=h, minute=m, second=s)
 
-    st = time.fromisoformat(start_time_s)
-    et = time.fromisoformat(end_time_s)
-    if et <= st:
-        flash("End time must be after start time.", "danger")
-        return redirect(url_for("admin.teacher_availability", teacher_id=teacher_id))
+        if isinstance(v, str):
+            parts = v.strip().split(":")
+            h = int(parts[0]) if len(parts) > 0 else 0
+            m = int(parts[1]) if len(parts) > 1 else 0
+            s = int(parts[2]) if len(parts) > 2 else 0
+            return time(hour=h, minute=m, second=s)
 
-    t = db.session.execute(text("""
-        SELECT class_duration_min
-        FROM teacher
-        WHERE id = :id
-    """), {"id": teacher_id}).mappings().first()
+        raise TypeError(f"Unsupported time type: {type(v)} -> {v}")
 
-    duration = int((t["class_duration_min"] if t else 45) or 45)
+    # ---------- Get last generated end date ----------
+    row = db.session.execute(
+        text("""
+            SELECT DATE(MAX(end_at)) AS max_end_date
+            FROM teacher_availability
+            WHERE teacher_id = :teacher_id
+        """),
+        {"teacher_id": teacher_id},
+    ).mappings().first()
+
+    max_end_date = row["max_end_date"] if row else None
+    dbg(f"max_end_date={max_end_date}")
+
+    month_end_date = date.today() + timedelta(days=29)
+    max_iters = max_iters_from_dates(month_end_date,max_end_date)
+
+    if max_end_date is not None and max_end_date > month_end_date:
+        dbg(f"Skip: already beyond month window. month_end_date={month_end_date}")
+        return 0
+
+    start_date = (max_end_date + timedelta(days=1)) if max_end_date else (date.today() + timedelta(days=1))
+
+    days = 30
+    default_duration = 45
+
+    dbg(f"START teacher_id={teacher_id}, start_date={start_date}, days={days}")
+
+    # ---------- Load teacher config ----------
+    teacher = db.session.execute(
+        text("""
+            SELECT
+                id,
+                class_duration_min,
+                shift_start_time,
+                shift_end_time,
+                break_start_time,
+                break_end_time
+            FROM teacher
+            WHERE id = :id
+            LIMIT 1
+        """),
+        {"id": teacher_id},
+    ).mappings().first()
+
+    if not teacher:
+        if has_request_context():
+            flash("Teacher not found.", "danger")
+        dbg("Teacher not found -> returning")
+        return 0
+
+    duration = int((teacher["class_duration_min"] or default_duration) or default_duration)
     duration = max(15, min(duration, 240))
     step = timedelta(minutes=duration)
 
+    # Normalize TIME values
+    raw_s = teacher["shift_start_time"]
+    raw_e = teacher["shift_end_time"]
+    raw_bs = teacher["break_start_time"]
+    raw_be = teacher["break_end_time"]
+
+    s_time = to_time(raw_s)
+    e_time = to_time(raw_e)
+    b_s = to_time(raw_bs)
+    b_e = to_time(raw_be)
+
+    dbg(
+        f"RAW types: shift_start={type(raw_s)}, shift_end={type(raw_e)}, "
+        f"break_start={type(raw_bs)}, break_end={type(raw_be)}"
+    )
+    dbg(f"Normalized: duration={duration}, shift=({s_time} -> {e_time}), break=({b_s} -> {b_e})")
+
+    # If shift times missing, stop to avoid crashes
+    if not s_time or not e_time:
+        dbg("Missing shift_start_time or shift_end_time -> skipping")
+        return 0
+
+    # ---------- Helpers ----------
+    def build_window(d: date, start_t: time, end_t: time):
+        """Return (start_dt, end_dt) for a date, supporting overnight end."""
+        start_dt = datetime.combine(d, start_t)
+        end_dt = datetime.combine(d, end_t)
+        if end_dt <= start_dt:
+            end_dt = datetime.combine(d + timedelta(days=1), end_t)
+        return start_dt, end_dt
+
+    def build_break(d: date, bs: time | None, be: time | None,
+                    shift_start_dt: datetime, shift_end_dt: datetime):
+        """
+        Build break window. Supports overnight breaks too.
+        Returns (break_start_dt, break_end_dt) or (None, None).
+        Clamps break inside shift.
+        """
+        if not bs or not be:
+            return None, None
+
+        br_s = datetime.combine(d, bs)
+        br_e = datetime.combine(d, be)
+        if br_e <= br_s:
+            br_e = datetime.combine(d + timedelta(days=1), be)
+
+        # Clamp within shift bounds
+        br_s = max(br_s, shift_start_dt)
+        br_e = min(br_e, shift_end_dt)
+        if br_e <= br_s:
+            return None, None
+
+        return br_s, br_e
+
+    # ---------- Slot generation ----------
+    rows_to_insert = []
     created = 0
-    cur_day = start_d
+
+    for i in range(days):
+        businessdate = start_date + timedelta(days=i)
+
+        shift_start_dt, shift_end_dt = build_window(businessdate, s_time, e_time)
+        break_start_dt, break_end_dt = build_break(businessdate, b_s, b_e, shift_start_dt, shift_end_dt)
+
+        dbg(
+            f"Day {businessdate}: shift {shift_start_dt} -> {shift_end_dt}, "
+            f"break {break_start_dt} -> {break_end_dt}"
+        )
+
+        cur = shift_start_dt
+        day_slots = 0
+
+
+        iters = 0
+
+        while cur + step <= shift_end_dt:
+            iters += 1
+            if iters > max_iters:
+                dbg(f"SAFETY BREAK: too many iterations on {businessdate}")
+                break
+
+            nxt = cur + step
+
+            # Skip overlap with break
+            if break_start_dt and break_end_dt:
+                overlaps_break = not (nxt <= break_start_dt or cur >= break_end_dt)
+                if overlaps_break:
+                    dbg(f"Skipping slot overlapping break: {cur} -> {nxt}; jump to {break_end_dt}")
+                    cur = break_end_dt
+                    continue
+
+            rows_to_insert.append({
+                "teacher_id": teacher_id,
+                "start_at": cur,
+                "end_at": nxt,
+                "businessdate": businessdate,
+            })
+            created += 1
+            day_slots += 1
+            cur = nxt
+
+        dbg(f"Day {businessdate}: generated {day_slots} slots")
+
+    if not rows_to_insert:
+        dbg("No rows to insert -> returning")
+        return 0
+
+    dbg(f"Prepared total rows_to_insert={len(rows_to_insert)}")
+
+    # ---------- Bulk insert ----------
+    insert_sql = text("""
+        INSERT INTO teacher_availability
+            (teacher_id, start_at, end_at, is_booked, businessdate)
+        VALUES
+            (:teacher_id, :start_at, :end_at, 0, :businessdate)
+    """)
 
     try:
-        with db.session.begin():
-            while cur_day <= end_d:
-                if cur_day.weekday() in dows:
-                    window_start = datetime.combine(cur_day, st)
-                    window_end = datetime.combine(cur_day, et)
+        dbg(f"bulk insert rows={len(rows_to_insert)}")
+        result = db.session.execute(insert_sql, rows_to_insert)
+        dbg(f"executed insert; rowcount={getattr(result, 'rowcount', None)}; committing...")
+        db.session.commit()
+        dbg("commit OK")
+        return created
 
-                    cur = window_start
-                    while cur + step <= window_end:
-                        db.session.execute(text("""
-                            INSERT INTO teacher_availability
-                            (teacher_id, start_at, end_at, venue_id, is_booked)
-                            VALUES
-                            (:teacher_id, :start_at, :end_at, :venue_id, 0)
-                        """), {
-                            "teacher_id": teacher_id,
-                            "start_at": cur,
-                            "end_at": cur + step,
-                            "venue_id": venue_id
-                        })
-                        created += 1
-                        cur = cur + step
-
-                cur_day += timedelta(days=1)
-
-        flash(f"Created {created} slot(s) of {duration} minutes.", "success")
-    except Exception:
+    except Exception as e:
+        dbg(f"INSERT ERROR: {repr(e)} -> rolling back")
         db.session.rollback()
-        flash("Could not create slots (duplicates may exist).", "danger")
-
-    return redirect(url_for("admin.teacher_availability", teacher_id=teacher_id))
+        return 0
 
 
 @admin_bp.post("/teachers/<int:teacher_id>/availability/<int:slot_id>/delete")
@@ -1159,7 +1300,7 @@ def user_edit(user_id: int):
     if request.method == "POST":
         # Read form
         email = (request.form.get("email") or "").strip().lower()
-        role = (request.form.get("role") or "customer").strip().lower()
+        role = (request.form.get("role") or "student").strip().lower()
         first_name = (request.form.get("first_name") or "").strip()
         last_name = (request.form.get("last_name") or "").strip()
         phone = (request.form.get("phone") or "").strip() or None
@@ -1179,8 +1320,8 @@ def user_edit(user_id: int):
             flash("Email is required.", "danger")
             return redirect(url_for("admin.user_edit", user_id=user_id))
 
-        if role not in ("admin", "customer"):
-            role = "customer"
+        if role not in ("admin", "student","teacher"):
+            role = "student"
 
         # Email uniqueness check if changed
         exists = db.session.execute(text("""
@@ -1247,9 +1388,9 @@ def user_edit(user_id: int):
 def user_create():
     email = (request.form.get("email") or "").strip().lower()
     password = (request.form.get("password") or "").strip()
-    role = (request.form.get("role") or "customer").strip().lower()
-    if role not in ["admin", "customer"]:
-        role = "customer"
+    role = (request.form.get("role") or "student").strip().lower()
+    if role not in ["admin", "student","teacher"]:
+        role = "student"
 
     if not email or not password:
         flash("Email and password required.", "danger")
@@ -1276,9 +1417,9 @@ def user_create():
 @admin_bp.post("/users/<int:user_id>/role")
 @admin_required
 def user_set_role(user_id):
-    role = (request.form.get("role") or "customer").strip().lower()
-    if role not in ["admin", "customer"]:
-        role = "customer"
+    role = (request.form.get("role") or "student").strip().lower()
+    if role not in ["admin", "student","teacher"]:
+        role = "student"
 
     db.session.execute(text("""
         UPDATE user

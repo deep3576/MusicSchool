@@ -1,4 +1,4 @@
-/* Student theme: modern warm (only for logged-in customers) */
+/* Student theme: modern warm (only for logged-in student) */
 
 body.student{
   background:
@@ -14,13 +14,7 @@ body.student .topbar{
   border-bottom: 1px solid rgba(120, 70, 20, .12);
 }
 
-/* Brand icon becomes warm */
-body.student .brand::before{
-  content:"☀";
-  background: linear-gradient(135deg, rgba(255,155,70,.16), rgba(255,205,140,.18));
-  border: 1px solid rgba(120,70,20,.12);
-  box-shadow: 0 10px 22px rgba(255,155,70,.10);
-}
+
 
 /* Nav hover */
 body.student .nav a:hover{

@@ -14,13 +14,7 @@ body.admin .topbar{
   border-bottom: 1px solid rgba(20, 70, 40, .12);
 }
 
-/* Brand icon */
-body.admin .brand::before{
-  content:"✓";
-  background: linear-gradient(135deg, rgba(24,169,87,.16), rgba(24,169,87,.08));
-  border: 1px solid rgba(20, 70, 40, .12);
-  box-shadow: 0 10px 22px rgba(24,169,87,.10);
-}
+
 
 /* Nav hover */
 body.admin .nav a:hover{

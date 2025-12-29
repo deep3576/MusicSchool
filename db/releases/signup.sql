@@ -1,9 +1,9 @@
 /* =========================================================
    TheSpiritSchool.ca - Release 003 (Users + Roles + Profile)
    Adds:
-   - user.role (admin/customer)
+   - user.role (admin/student/teacher)
    - user profile fields (name, phone, address)
-   - booking.user_id FK to user (for customer bookings)
+   - booking.user_id FK to user (for student bookings)
    ========================================================= */
 
 USE `deep3576$TheSpiritSchool_ProdDB`;
@@ -17,8 +17,12 @@ SET @db := DATABASE();
 SET @exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA=@db AND TABLE_NAME='user' AND COLUMN_NAME='role');
 SET @sql := IF(@exists=0,
-  "ALTER TABLE `user` ADD COLUMN `role` VARCHAR(20) NOT NULL DEFAULT 'customer' AFTER `password_hash`",
+    "ALTER TABLE `user` ADD COLUMN `role` varchar(20) NOT NULL DEFAULT 'student' CHECK (role IN ('student','teacher','admin')) AFTER `password_hash`",
   "SELECT 'user.role exists'");
+
+  'role' TEXT NOT NULL DEFAULT 'student'
+    CHECK (role IN ('student','teacher','admin'))
+
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- first_name
@@ -134,4 +138,4 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- Change email below if your admin is different:
 UPDATE `user`
 SET `role`='admin'
-WHERE `email`='admin@thespiritschool.ca';
+WHERE `email`='admin@therhythmschool.ca';

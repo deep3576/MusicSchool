@@ -4,16 +4,31 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="updated on more pages">
-      <change afterPath="$PROJECT_DIR$/db/releases/Venue_handling.sql" afterDir="false" />
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="updations">
+      <change afterPath="$PROJECT_DIR$/app/static/img/logo.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/templates/auth/forgotpassword.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/templates/auth/reset_password.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/templates/certificates/certificate.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/jobs.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/auth_user.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/auth_user.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/static/css/admin.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/admin.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/static/css/student.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/student.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/static/css/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/teacher_availability.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/teacher_availability.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/user_edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/user_edit.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/auth/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/auth/login.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/releases/signup.sql" beforeDir="false" afterPath="$PROJECT_DIR$/db/releases/signup.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run.py" beforeDir="false" afterPath="$PROJECT_DIR$/run.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run.sh" beforeDir="false" afterPath="$PROJECT_DIR$/run.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -71,6 +86,35 @@
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
+  <component name="RunManager">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="TheSpiritSchool" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/app/routes" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/app/routes/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.main" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -110,13 +154,22 @@
       <option name="project" value="LOCAL" />
       <updated>1766574687180</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="updated on more pages">
+      <option name="closed" value="true" />
+      <created>1766632753752</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1766632753752</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="CSS Updations" />
     <MESSAGE value="Emailer Fixed and Working &#10;therythmschool@gmail.com" />
     <MESSAGE value="updated on more pages" />
-    <option name="LAST_COMMIT_MESSAGE" value="updated on more pages" />
+    <MESSAGE value="updations" />
+    <option name="LAST_COMMIT_MESSAGE" value="updations" />
   </component>
 </project>

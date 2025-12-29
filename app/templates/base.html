@@ -26,16 +26,18 @@
 <body class="{% if request.blueprint == 'admin' %}admin{% elif current_user.is_authenticated and not current_user.is_admin %}student{% endif %}">
   <header class="topbar">
     <div class="wrap topbar-inner">
-      <a class="brand" href="{{ url_for('main.index') }}">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span class="brand-text">TheRhythmSchool.ca</span>
-      </a>
+     <a class="brand" href="{{ url_for('main.index') }}">
+  <span class="brand-mark" aria-hidden="true">
+    <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="The Rhythm School logo">
+  </span>
+</a>
+
 
       <nav class="nav" aria-label="Primary">
         <a href="{{ url_for('main.index') }}">Home</a>
         <a href="{{ url_for('main.contact') }}">Contact Us</a>
 
-        {% if current_user.is_authenticated and current_user.is_customer %}
+        {% if current_user.is_authenticated and current_user.is_student %}
           <a href="{{ url_for('main.book') }}">Book Now</a>
           <a href="{{ url_for('main.my_bookings') }}">My Bookings</a>
         {% endif %}
@@ -90,7 +92,6 @@
   <footer class="footer">
     <div class="wrap footer-inner">
       <span class="muted">© {{ 2025 }} The Rhythm School</span>
-      <span class="muted">Modern • Clean • Consistent</span>
     </div>
   </footer>
 

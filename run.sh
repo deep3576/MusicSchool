@@ -6,6 +6,8 @@ source .venv/bin/activate
 # .venv\Scripts\activate
 
 pip install -r requirements.txt
+brew install pango cairo gdk-pixbuf libffi
+export DYLD_FALLBACK_LIBRARY_PATH="/opt/homebrew/lib:/usr/local/lib:/usr/lib"
 
 # create your real .env
 cp .env.example .env

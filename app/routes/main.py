@@ -1,13 +1,16 @@
 from types import SimpleNamespace
 from datetime import datetime, timedelta, time
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request,current_app, jsonify, make_response
 from flask_login import login_user, logout_user, login_required, current_user
-from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from ..emailer import send_email
 from ..extensions import db
-from ..forms import SignupForm, LoginForm
+from ..forms import SignupForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
 from ..auth_user import AppUser, get_user_by_id
+from sqlalchemy import text
+from itsdangerous import BadSignature, SignatureExpired ,URLSafeTimedSerializer
+from weasyprint import HTML
+from ..forms import ContactForm
 
 main_bp = Blueprint("main", __name__)
 
@@ -81,7 +84,6 @@ def book():
     return render_template("book.html", bounds=bounds, title="Book")
 
 
-from ..forms import ContactForm
 @main_bp.route("/contact", methods=["GET", "POST"])
 def contact():
     form = ContactForm()
@@ -381,7 +383,7 @@ def signup():
              address_1, address_2, city, province, postal_code, country,
              created_at)
             VALUES
-            (:email, :pw, 'customer',
+            (:email, :pw, 'student',
              :fn, :ln, :phone,
              :a1, :a2, :city, :prov, :pc, :country,
              NOW())
@@ -451,6 +453,125 @@ def logout():
     return redirect(url_for("main.index"))
 
 
+def _serializer():
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+
+
+
+@main_bp.route("/forgotpassword", methods=["GET", "POST"])
+def forgotpassword():
+    form = ForgotPasswordForm()  # contains only email
+    if form.validate_on_submit():
+        email = form.email.data.strip().lower()
+
+        # Always respond same way (prevents email enumeration)
+        flash("If that email exists, we sent a reset link.", "success")
+
+        # Check if user exists
+        row = db.session.execute(
+            text("SELECT id FROM user WHERE email=:email"),
+            {"email": email}
+        ).mappings().first()
+
+        if row:
+            s = _serializer()
+            token = s.dumps({"uid": row["id"]}, salt="reset-password")
+
+            reset_url = url_for("main.reset_password", token=token, _external=True)
+            send_email(email, subject="Reset your password", body=reset_url)
+            print("RESET LINK:", reset_url)  # for testing
+
+        return redirect(url_for("main.login"))
+
+    return render_template("auth/forgotpassword.html", form=form)
+
+
+
+
+@main_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    form = ResetPasswordForm()
+    current_app.logger.info("Form fields: %s", list(form._fields.keys()))
+
+    try:
+        data = _serializer().loads(token, salt="reset-password", max_age=60 * 30)
+        uid = int(data["uid"])
+    except SignatureExpired:
+        flash("Reset link expired. Please request again.", "danger")
+        return redirect(url_for("main.forgotpassword"))
+    except BadSignature:
+        flash("Invalid reset link.", "danger")
+        return redirect(url_for("main.forgotpassword"))
+
+    # ✅ IMPORTANT: use your real table name: "user"
+    row = db.session.execute(
+        text('SELECT id, email FROM `user` WHERE id = :uid'),   # SQLite quoting
+        {"uid": uid}
+    ).mappings().first()
+
+    if not row:
+        flash("Invalid reset link (user not found).", "danger")
+        return redirect(url_for("main.forgotpassword"))
+
+    email = row["email"]
+
+    if request.method == "POST":
+        if not form.validate_on_submit():
+            current_app.logger.info("Reset form errors: %s", form.errors)
+            for field, errs in form.errors.items():
+                for err in errs:
+                    flash(err, "danger")
+            return render_template("auth/reset_password.html", form=form, title="Reset Password", email=email)
+
+        new_hash = generate_password_hash(form.password.data)
+
+        result = db.session.execute(
+            text('UPDATE `user` SET password_hash = :h WHERE id = :uid'),
+            {"h": new_hash, "uid": uid}
+        )
+
+        if result.rowcount != 1:
+            db.session.rollback()
+            flash("Password was not updated. Please try again.", "danger")
+            return render_template("auth/reset_password.html", form=form, title="Reset Password", email=email)
+
+        db.session.commit()
+        flash("Password updated. Please login.", "success")
+        return redirect(url_for("main.login"))
+
+    return render_template("auth/reset_password.html", form=form, title="Reset Password", email=email)
+
+
+
+
+
 @main_bp.get("/programs")
 def programs():
     return render_template("programs.html", title="Programs")
+
+
+
+
+@main_bp.get("/certificate/<int:student_id>/pdf")
+def certificate_pdf(student_id):
+
+    data = {
+        "certificate_id": f"TRS-{student_id:05d}",
+        "issue_date": "2025-12-28",
+        "student_name": "Inderdeep Singh",
+        "course_name": "Vocal Training (Indian Classical)",
+        "level_name": "Level 1",
+        "duration_text": "8 Weeks",
+        "instructor_name": "Harjeet Singh",
+        "director_name": "Harjeet Singh",
+    }
+
+    html = render_template("certificates/certificate.html", **data)
+
+    # base_url is important so WeasyPrint can load /static/... assets (logo, css, etc.)
+    pdf_bytes = HTML(string=html, base_url=request.root_url).write_pdf()
+
+    resp = make_response(pdf_bytes)
+    resp.headers["Content-Type"] = "application/pdf"
+    resp.headers["Content-Disposition"] = f'inline; filename="{data["certificate_id"]}.pdf"'
+    return resp

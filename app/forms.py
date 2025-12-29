@@ -1,7 +1,7 @@
 from wtforms import StringField, PasswordField
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField
-from wtforms.validators import DataRequired, Email, Length, Optional
+from wtforms.validators import DataRequired, Email, Length, Optional, EqualTo
 
 
 class SignupForm(FlaskForm):
@@ -30,3 +30,20 @@ class ContactForm(FlaskForm):
     phone = StringField("Phone", validators=[Optional(), Length(max=40)])
     subject = StringField("Subject", validators=[DataRequired(), Length(max=160)])
     message = TextAreaField("Message", validators=[DataRequired(), Length(min=5, max=5000)])
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField("New Password", validators=[
+        DataRequired(),
+        Length(min=8, message="Password must be at least 8 characters.")
+    ])
+
+    confirm_password = PasswordField("Confirm Password", validators=[
+        DataRequired(),
+        EqualTo("password", message="Passwords do not match.")
+    ])
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired(), Email(), Length(max=160)])
+
+

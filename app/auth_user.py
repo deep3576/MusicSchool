@@ -26,8 +26,8 @@ class AppUser(UserMixin):
         return (self.role or "").lower() == "admin"
 
     @property
-    def is_customer(self) -> bool:
-        return (self.role or "").lower() == "customer"
+    def is_student(self) -> bool:
+        return (self.role or "").lower() == "student"
 
 
 def get_user_by_id(user_id: int) -> AppUser | None:

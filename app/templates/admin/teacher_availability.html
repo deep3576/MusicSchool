@@ -16,7 +16,6 @@
 
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <button class="btn" type="button" id="openAddWindow">+ Add Availability Window</button>
-      <button class="btn secondary" type="button" id="openBulkGen">Bulk Generator (Recurring)</button>
       <a class="btn secondary" href="{{ url_for('admin.teachers') }}">Back</a>
     </div>
   </div>
@@ -141,7 +140,6 @@
 {# ===================== MODAL 2: Bulk Generator (Recurring) ===================== #}
 <div id="bulkGenModal" class="modal hidden" aria-hidden="true">
   <div class="modal-backdrop" data-close="1"></div>
-
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bulkGenTitle">
     <div class="modal-head">
       <div>
@@ -154,65 +152,6 @@
       <button class="btn secondary" type="button" id="closeBulkGen">Close</button>
     </div>
 
-    <form method="post"
-          action="{{ url_for('admin.availability_bulk', teacher_id=teacher.id) }}"
-          style="display:grid; gap:10px;">
-      {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-
-      <div class="row2">
-        <div>
-          <label class="muted">Start Date</label>
-          <input class="input" type="date" name="start_date" required>
-        </div>
-        <div>
-          <label class="muted">End Date</label>
-          <input class="input" type="date" name="end_date" required>
-        </div>
-      </div>
-
-      <div class="row2">
-        <div>
-          <label class="muted">Start Time</label>
-          <input class="input" type="time" name="start_time" required>
-        </div>
-        <div>
-          <label class="muted">End Time</label>
-          <input class="input" type="time" name="end_time" required>
-        </div>
-      </div>
-
-      <div class="card" style="box-shadow:none; border:1px solid var(--border,#e6e6ee);">
-        <div style="font-weight:950; margin-bottom:8px;">Repeat On</div>
-
-        <div class="dow-grid">
-          <label class="dow-item"><input type="checkbox" name="dow" value="0"> <span>Mon</span></label>
-          <label class="dow-item"><input type="checkbox" name="dow" value="1"> <span>Tue</span></label>
-          <label class="dow-item"><input type="checkbox" name="dow" value="2"> <span>Wed</span></label>
-          <label class="dow-item"><input type="checkbox" name="dow" value="3"> <span>Thu</span></label>
-          <label class="dow-item"><input type="checkbox" name="dow" value="4"> <span>Fri</span></label>
-          <label class="dow-item"><input type="checkbox" name="dow" value="5"> <span>Sat</span></label>
-          <label class="dow-item"><input type="checkbox" name="dow" value="6"> <span>Sun</span></label>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-          <button class="btn secondary" type="button" id="selectWeekdays">Select Weekdays</button>
-          <button class="btn secondary" type="button" id="selectWeekends">Select Weekends</button>
-          <button class="btn secondary" type="button" id="clearDays">Clear</button>
-        </div>
-      </div>
-
-      <div>
-        <label class="muted">Venue (optional)</label>
-        <select class="input" name="venue_id">
-          <option value="">— Use Teacher Default / None —</option>
-          {% for v in venues %}
-            <option value="{{ v.id }}">{{ v.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <button class="btn" type="submit">Generate Recurring Slots</button>
-    </form>
   </div>
 </div>
 

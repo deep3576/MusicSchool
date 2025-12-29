@@ -43,14 +43,6 @@ body{
   color:var(--text);
   display:flex; align-items:center; gap:10px;
 }
-.brand::before{
-  content:"✦";
-  display:inline-grid; place-items:center;
-  width:28px; height:28px;
-  border-radius:999px;
-  background: linear-gradient(135deg, rgba(107,78,255,.18), rgba(255,204,102,.20));
-  border:1px solid var(--border);
-}
 
 .nav{display:flex;gap:8px;flex-wrap:wrap}
 .nav a{
@@ -193,16 +185,16 @@ body{
 .badge{
   display:inline-flex;
   align-items:center;
-  gap:8px;
+  gap:1px;
   padding:6px 10px;
   border-radius:999px;
-  font-weight:900;
-  letter-spacing:.2px;
+  font-weight:500;
+  letter-spacing:.1px;
   border:1px solid rgba(107,78,255,.25);
   background: linear-gradient(135deg, rgba(107,78,255,.10), rgba(255,204,102,.14));
   color: rgba(16,16,24,.88);
 }
-.hero-card h1{margin:10px 0 6px; font-size: 38px; line-height:1.1}
+.hero-card h1{margin:10px 0 6px; font-size: 15px; line-height:1.1}
 .hero-sub{margin:0 0 12px; color: rgba(16,16,24,.85)}
 .hero-cta{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
 .hero-stats{
@@ -429,4 +421,66 @@ img, video { max-width: 100%; height: auto; }
   /* ✅ ADD THESE */
   color: var(--text);
   caret-color: var(--text);
+}
+
+
+/* Fix Chrome/Safari autofill grey/yellow background */
+input.input:-webkit-autofill,
+input.input:-webkit-autofill:hover,
+input.input:-webkit-autofill:focus,
+textarea.input:-webkit-autofill,
+textarea.input:-webkit-autofill:hover,
+textarea.input:-webkit-autofill:focus,
+select.input:-webkit-autofill,
+select.input:-webkit-autofill:hover,
+select.input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text) !important;
+  caret-color: var(--text) !important;
+
+  /* trick: paint your desired bg */
+  -webkit-box-shadow: 0 0 0 1000px rgba(255,255,255,.90) inset !important;
+  box-shadow: 0 0 0 1000px rgba(255,255,255,.90) inset !important;
+
+  /* prevents sudden color flash */
+  transition: background-color 9999s ease-out 0s;
+}
+
+
+/* Brand / Logo */
+/* Brand mark (logo container) */
+.brand-mark{
+  width: 400px;
+  height: 124px;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+/* Make the SVG/logo fit nicely */
+.brand-mark img{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  padding: 0px;          /* breathing space inside */
+}
+
+/* Responsive sizing */
+@media (max-width: 900px){
+  .brand-mark{
+    width: 340px;
+    height: 94px;
+    border-radius: 12px;
+  }
+  .brand-mark img{ padding: 7px; }
+}
+
+@media (max-width: 600px){
+  .brand-mark{
+    width: 340px;
+    height: 94px;
+    border-radius: 12px;
+  }
+  .brand-mark img{ padding: 6px; }
 }

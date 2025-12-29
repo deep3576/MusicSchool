@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+  /* ===== Certificate Page (A4 Landscape) ===== */
+  @page { size: A4 landscape; margin: 12mm; }
+
+  .cert-wrap{
+    display:flex;
+    justify-content:center;
+    padding: 18px 0;
+  }
+
+  .certificate{
+    width: 1123px;               /* ~A4 landscape at 96dpi */
+    min-height: 794px;
+    background: #fff;
+    color: #101018;
+    border-radius: 22px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(30,30,50,.12);
+    box-shadow: 0 18px 60px rgba(20,20,40,.10);
+    padding: 42px;
+  }
+
+  /* Soft brand background */
+  .certificate::before{
+    content:"";
+    position:absolute; inset:-40px;
+    background:
+      radial-gradient(900px 500px at 15% 10%, rgba(107,78,255,.12), transparent 60%),
+      radial-gradient(900px 500px at 85% 0%, rgba(255,204,102,.16), transparent 55%),
+      radial-gradient(700px 450px at 70% 75%, rgba(107,78,255,.10), transparent 60%);
+    pointer-events:none;
+  }
+
+  /* Border frame */
+  .frame{
+    position:absolute; inset:18px;
+    border-radius: 20px;
+    border: 2px solid rgba(107,78,255,.22);
+    outline: 1px solid rgba(255,204,102,.25);
+    outline-offset: 10px;
+    pointer-events:none;
+  }
+
+  .cert-header{
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:18px;
+}
+
+
+.brand-mark{
+  width: 640px;
+  height: 120px;
+  display:flex;
+  align-items:flex-start;     /* ✅ top */
+  justify-content:flex-start; /* ✅ left */
+  overflow: visible;
+  margin: 0;                  /* ✅ keep in top-left */
+  padding: 0;
+}
+
+.brand-mark img{
+  height: 120px;
+  width: auto;
+  max-width: 640px;
+  display:block;
+  margin: 0;                  /* ✅ no centering */
+}
+
+.brand-left{
+  display:flex;
+  flex-direction: column;   /* ✅ stack items vertically */
+  align-items:flex-start;   /* ✅ left aligned */
+  justify-content:flex-start;
+  gap: 8px;                 /* space between logo and tag */
+  flex: 0 0 auto;
+  text-align:left;
+}
+
+  .meta{
+    text-align:right;
+    color: rgba(16,16,24,.70);
+    font-size: 13px;
+    line-height: 1.6;
+    flex: 0 0 auto;
+    padding-top: 6px;
+  }
+  .meta b{ color:#101018; }
+
+  .cert-title{
+    position:relative;
+    text-align:center;
+    margin-top: 10px;
+    margin-bottom: 12px;
+  }
+  .cert-title .top{
+    font-size: 14px;
+    letter-spacing: 5px;
+    color: rgba(16,16,24,.55);
+    font-weight: 800;
+  }
+  .cert-title h1{
+    margin: 10px 0 6px;
+    font-size: 52px;
+    letter-spacing: .4px;
+  }
+  .cert-title .sub{
+    margin: 0;
+    font-size: 16px;
+    color: rgba(16,16,24,.70);
+  }
+
+  .cert-body{
+    position:relative;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align:center;
+    padding: 18px 10px 0;
+  }
+
+  .presented{
+    font-size: 16px;
+    color: rgba(16,16,24,.70);
+    margin: 8px 0 10px;
+  }
+
+  .student{
+    font-size: 46px;
+    font-weight: 950;
+    letter-spacing: .3px;
+    margin: 8px 0 10px;
+  }
+
+  .line{
+    width: 72%;
+    height: 2px;
+    margin: 10px auto 16px;
+    background: linear-gradient(90deg, rgba(255,204,102,0), rgba(255,204,102,.95), rgba(107,78,255,.95), rgba(107,78,255,0));
+    border-radius: 999px;
+  }
+
+  .details{
+    font-size: 18px;
+    line-height: 1.7;
+    color: rgba(16,16,24,.80);
+    margin: 0 auto;
+  }
+  .details b{ color:#101018; }
+
+  .cert-footer{
+    position:absolute;
+    left:42px; right:42px; bottom:34px;
+    display:flex;
+    justify-content:space-between;
+    gap:18px;
+    align-items:flex-end;
+  }
+
+  .sig{
+    width: 340px;
+  }
+  .sig .sig-line{
+    height: 1px;
+    background: rgba(16,16,24,.28);
+    margin-bottom: 8px;
+  }
+  .sig .sig-name{
+    font-weight: 900;
+  }
+  .sig .sig-title{
+    color: rgba(16,16,24,.65);
+    font-size: 13px;
+    margin-top: 2px;
+  }
+
+  .seal{
+    width: 170px;
+    height: 170px;
+    border-radius: 999px;
+    border: 2px solid rgba(107,78,255,.25);
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255,204,102,.25), transparent 50%),
+      radial-gradient(circle at 70% 75%, rgba(107,78,255,.18), transparent 55%),
+      rgba(255,255,255,.65);
+    display:grid;
+    place-items:center;
+    text-align:center;
+    padding: 18px;
+  }
+  .seal .seal-top{
+    font-weight: 900;
+    letter-spacing: 2px;
+    font-size: 12px;
+    color: rgba(16,16,24,.70);
+  }
+  .seal .seal-mid{
+    font-weight: 950;
+    font-size: 22px;
+    margin: 6px 0 4px;
+  }
+  .seal .seal-bot{
+    font-size: 12px;
+    color: rgba(16,16,24,.65);
+  }
+
+  /* Small screens (web preview only) */
+  @media (max-width: 1100px){
+    .certificate{ width: 98vw; min-height: auto; }
+    .brand-mark{ width: 420px; height: 110px; }
+    .brand-mark img{ max-width: 420px; height: 96px; }
+  }
+  @media (max-width: 820px){
+    .cert-header{ flex-direction: column; align-items: flex-start; }
+    .meta{ text-align:left; padding-top: 0; }
+    .brand-mark{ width: 100%; height: auto; }
+    .brand-mark img{ max-width: 100%; height: 90px; }
+    .cert-footer{ position:relative; left:auto; right:auto; bottom:auto; margin-top: 30px; }
+  }
+
+  /* Print: remove base layout clutter */
+  @media print{
+    body{ background:#fff !important; }
+    .topbar, .footer{ display:none !important; }
+    .wrap{ max-width:none !important; padding:0 !important; }
+    .cert-wrap{ padding:0 !important; }
+    .certificate{ box-shadow:none !important; border:none !important; }
+    .frame{ display:none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cert-wrap">
+  <div class="certificate">
+    <div class="frame"></div>
+
+    <div class="cert-header">
+      <div class="brand-left">
+        <span class="brand-mark">
+          <img src="{{ url_for('static', filename='img/logo.svg') }}?v=2" alt="The Rhythm School logo">
+        </span>
+
+      </div>
+
+      <div class="meta">
+        <div><b>Certificate ID:</b> {{ certificate_id }}</div>
+        <div><b>Date:</b> {{ issue_date }}</div>
+      </div>
+    </div>
+
+    <div class="cert-title">
+      <div class="top">CERTIFICATE OF COMPLETION</div>
+      <h1>Achievement</h1>
+      <p class="sub">This certifies successful completion of the program requirements</p>
+    </div>
+
+    <div class="cert-body">
+      <div class="presented">This certificate is proudly presented to</div>
+
+      <div class="student">{{ student_name }}</div>
+      <div class="line"></div>
+
+      <div class="details">
+        for successfully completing <b>{{ course_name }}</b><br>
+        Level: <b>{{ level_name }}</b> &nbsp;•&nbsp; Duration: <b>{{ duration_text }}</b><br>
+        with satisfactory performance at <b>The Rhythm School</b>.
+      </div>
+    </div>
+
+    <div class="cert-footer">
+      <div class="sig">
+        <div class="sig-line"></div>
+        <div class="sig-name">{{ instructor_name }}</div>
+        <div class="sig-title">Instructor</div>
+      </div>
+
+      <div class="seal">
+        <div class="seal-top">OFFICIAL</div>
+        <div class="seal-mid">TRS</div>
+        <div class="seal-bot">Verified</div>
+      </div>
+
+      <div class="sig" style="text-align:right;">
+        <div class="sig-line"></div>
+        <div class="sig-name">{{ director_name }}</div>
+        <div class="sig-title">Director</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

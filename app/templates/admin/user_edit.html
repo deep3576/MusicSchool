@@ -19,8 +19,9 @@
       <div>
         <label class="label">Role</label>
         <select class="input" name="role">
-          <option value="customer" {% if u.role == 'customer' %}selected{% endif %}>customer</option>
-          <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>admin</option>
+          <option value="student" {% if u.role == "student" %}selected{% endif %}>student</option>
+          <option value="admin"   {% if u.role == "admin" %}selected{% endif %}>admin</option>
+          <option value="teacher" {% if u.role == "teacher" %}selected{% endif %}>teacher</option>
         </select>
       </div>
 

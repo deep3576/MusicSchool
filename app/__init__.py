@@ -1,9 +1,16 @@
 # app/__init__.py
 import os
 import configparser
+from datetime import date
 from flask import Flask
-
+from flask_apscheduler import APScheduler
 from .extensions import db, login_manager
+from .jobs import scheduling  # make sure jobs.py exists
+
+scheduler = APScheduler()
+
+class Config:
+    SCHEDULER_API_ENABLED = True
 
 
 def _read_config():
@@ -16,7 +23,6 @@ def _read_config():
     if not read_files:
         raise RuntimeError(f"config.ini not found at: {config_path}")
 
-    # Accept mysql section names flexibly (in case your file uses a different name)
     section = None
     for candidate in ["mysql", "db", "database"]:
         if cfg.has_section(candidate):
@@ -38,7 +44,6 @@ def create_app() -> Flask:
     app = Flask(__name__)
 
     cfg, db_section = _read_config()
-
     app.config["SECRET_KEY"] = cfg.get("flask", "secret_key", fallback="dev-secret-change-me")
 
     host = cfg.get(db_section, "host")
@@ -59,10 +64,30 @@ def create_app() -> Flask:
     from .auth_user import register_user_loader
     register_user_loader(login_manager)
 
-    # Register your existing blueprints (keep as-is)
+    # Blueprints
     from .routes.main import main_bp
     from .routes.admin import admin_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
 
+    # Scheduler
+    app.config.from_object(Config)
+    scheduler.init_app(app)
+
+    def run_midnight_job():
+        # run inside app context so db.session works
+        with app.app_context():
+            scheduling()
+
+    scheduler.add_job(
+        id="daily_scheduling_midnight",
+        func=run_midnight_job,
+        trigger="cron",
+        hour=0,                # midnight
+        minute=0,
+        replace_existing=True,
+        timezone="America/Toronto",
+    )
+
+    scheduler.start()
     return app
