@@ -31,208 +31,258 @@
     </div>
     {% else %}
 
-        {% for t in teachers %}
-{% if not teachers %}
-  <div class="card" style="margin-top:14px;">
-    <p class="muted" style="margin:0;">No teachers yet. Click <b>Add Teacher</b> to create one.</p>
-  </div>
-{% else %}
 
-      <div class="teachers-layout">
-  <!-- Search card -->
+    <div class="teachers-layout">
+        <!-- Search card -->
 
-  <div class="card teachers-search-card">
-      <!-- Optional: quick search filter -->
-  <div class="card" style="margin-top:14px; padding:12px;">
-    <input id="teacherSearch" class="input" type="text"
-           placeholder="Search teacher (name/email)..."
-           style="width:100%;">
-  </div>
-  </div>
+        <div class="card table-wrap teachers-table-card">
+            <div class="card teachers-search-card">
+                <input id="teacherSearch" class="input" type="text"
+                       placeholder="Search teacher (name/email)..."
+                       style="width:100%;">
+            </div>
+            <div class="card table-wrap" style="margin-top:14px; padding:0;">
+                <table class="teachers-table">
+                    <thead>
+                    <tr>
+                        <th>Teacher</th>
+                        <th>Email</th>
+                        <th>Classes Assigned</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                        <th>Assign</th>
+                    </tr>
+                    </thead>
 
-  <!-- Table card -->
-  <div class="card table-wrap teachers-table-card">
+                    <tbody id="teachersTbody">
+                    {% for t in teachers %}
 
-  <div class="card table-wrap" style="margin-top:14px; padding:0;">
-    <table class="teachers-table">
-      <thead>
-        <tr>
-          <th>Teacher</th>
-          <th>Email</th>
-          <th>Duration</th>
-          <th>Default Venue</th>
-          <th>Classes Assigned</th>
-          <th>Status</th>
-          <th>Actions</th>
-          <th>Assign</th>
-        </tr>
-      </thead>
+                    {# Create forms once (not wrapped around
+                    <tr>) #}
+                        <form id="upd-{{ t.id }}" method="post"
+                              action="{{ url_for('admin.teacher_update', teacher_id=t.id) }}">
+                            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{%
+                            endif %}
+                        </form>
 
-      <tbody id="teachersTbody">
-        {% for t in teachers %}
+                        <form id="tog-{{ t.id }}" method="post"
+                              action="{{ url_for('admin.teacher_toggle', teacher_id=t.id) }}">
+                            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{%
+                            endif %}
+                        </form>
 
-          {# Create forms once (not wrapped around <tr>) #}
-          <form id="upd-{{ t.id }}" method="post" action="{{ url_for('admin.teacher_update', teacher_id=t.id) }}">
-            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-          </form>
+                    <tr data-search="{{ (t.name ~ ' ' ~ (t.email or ''))|lower }}">
+                        <td>
+                            <div style="font-weight:950;">{{ t.name }}</div>
+                            {% if t.bio %}
+                            <div class="muted" style="font-size:12px; margin-top:4px;">{{ t.bio }}</div>
+                            {% endif %}
+                        </td>
 
-          <form id="tog-{{ t.id }}" method="post" action="{{ url_for('admin.teacher_toggle', teacher_id=t.id) }}">
-            {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-          </form>
+                        <td class="muted">
+                            {% if t.email %}{{ t.email }}{% else %}—{% endif %}
+                        </td>
 
-          <tr data-search="{{ (t.name ~ ' ' ~ (t.email or ''))|lower }}">
-            <td>
-              <div style="font-weight:950;">{{ t.name }}</div>
-              {% if t.bio %}
-                <div class="muted" style="font-size:12px; margin-top:4px;">{{ t.bio }}</div>
-              {% endif %}
-            </td>
 
-            <td class="muted">
-              {% if t.email %}{{ t.email }}{% else %}—{% endif %}
-            </td>
+                        <td class="muted t-classes" title="{{ t.class_titles }}">
+                            {% if t.class_titles %}
+                            {{ t.class_titles }}
+                            {% else %}
+                            — none —
+                            {% endif %}
+                        </td>
 
-            <td>
-              <input class="input t-mini"
-                     type="number"
-                     name="class_duration_min"
-                     min="15" max="240"
-                     value="{{ t.class_duration_min }}"
-                     form="upd-{{ t.id }}">
-            </td>
+                        <td>
+                            {% if t.is_active %}
+                            <span class="pill ok">Active</span>
+                            {% else %}
+                            <span class="pill off">Inactive</span>
+                            {% endif %}
+                        </td>
 
-            <td>
-              <select class="input t-venue"
-                      name="default_venue_id"
-                      form="upd-{{ t.id }}">
-                <option value="">— None —</option>
-                {% for v in venues %}
-                  <option value="{{ v.id }}"
-                    {% if t.default_venue and t.default_venue.id == v.id %}selected{% endif %}>
-                    {{ v.name }}
-                  </option>
-                {% endfor %}
-              </select>
-            </td>
+                        <td>
+                            <div class="cell-actions">
+                                <a class="btn secondary t-btn"
+                                   href="{{ url_for('admin.teacher_availability', teacher_id=t.id) }}">
+                                    Availability
+                                </a>
 
-            <td class="muted t-classes" title="{{ t.class_titles }}">
-              {% if t.class_titles %}
-                {{ t.class_titles }}
-              {% else %}
-                — none —
-              {% endif %}
-            </td>
+                                <button class="btn secondary t-btn" type="submit" form="tog-{{ t.id }}">
+                                    {% if t.is_active %}Deactivate{% else %}Activate{% endif %}
+                                </button>
 
-            <td>
-              {% if t.is_active %}
-                <span class="pill ok">Active</span>
-              {% else %}
-                <span class="pill off">Inactive</span>
-              {% endif %}
-            </td>
+                                <!-- Edit button -->
+                                <button class="btn secondary t-btn" type="button" onclick="openEdit({{ t.id }})">
+                                    Edit Teacher
+                                </button>
 
-            <td>
-              <div class="cell-actions">
-                <button class="btn secondary t-btn" type="submit" form="upd-{{ t.id }}">Save</button>
+                                <!-- EDIT MODAL -->
+                                <div class="form-popup" id="edit-{{ t.id }}">
+                                    <div class="form-backdrop" onclick="closeEdit({{ t.id }})"></div>
 
-                <a class="btn secondary t-btn"
-                   href="{{ url_for('admin.teacher_availability', teacher_id=t.id) }}">
-                  Availability
-                </a>
+                                    <form method="post"
+                                          action="{{ url_for('admin.teacher_edit', teacher_id=t.id) }}"
+                                          class="form-container">
 
-                <button class="btn secondary t-btn" type="submit" form="tog-{{ t.id }}">
-                  {% if t.is_active %}Deactivate{% else %}Activate{% endif %}
-                </button>
-              </div>
-            </td>
+                                        {% if csrf_token %}<input type="hidden" name="csrf_token"
+                                                                  value="{{ csrf_token() }}">{% endif %}
 
-            <td>
-              <button class="btn secondary t-btn" type="button" onclick="openAssign({{ t.id }})">
-                Assign/Update Classes
-              </button>
+                                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                                            <div style="font-weight:950;">Edit Teacher</div>
+                                            <button type="button" class="btn secondary t-btn"
+                                                    onclick="closeEdit({{ t.id }})">✕
+                                            </button>
+                                        </div>
 
-              {% set assigned_ids = assigned_ids_by_teacher.get(t.id, []) %}
+                                        <div class="muted" style="font-size:12px; margin-top:6px;">
+                                            Teacher ID: <b>{{ t.id }}</b>
+                                        </div>
 
-              <div class="form-popup" id="assign-{{ t.id }}">
-                <div class="form-backdrop" onclick="closeAssign({{ t.id }})"></div>
+                                        <div style="display:grid; gap:10px; margin-top:12px;">
+                                            <div>
+                                                <label class="muted">Name *</label>
+                                                <input class="input" type="text" name="name" value="{{ t.name }}"
+                                                       required>
+                                            </div>
 
-                <form method="post"
-                      action="{{ url_for('admin.teacherClassAssign', teacher_id=t.id) }}"
-                      class="form-container">
+                                            <div class="row2">
+                                                <div>
+                                                    <label class="muted">Email</label>
+                                                    <input class="input" type="email" name="email"
+                                                           value="{{ t.email or '' }}">
+                                                </div>
 
-                  {% if csrf_token %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                <div>
+                                                    <label class="muted">Class Duration (minutes)</label>
+                                                    <input class="input" type="number" name="class_duration_min"
+                                                           min="15" max="240"
+                                                           value="{{ t.class_duration_min }}">
+                                                </div>
+                                            </div>
 
-                  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                    <div style="font-weight:950;">Select Classes</div>
-                    <button type="button" class="btn secondary t-btn" onclick="closeAssign({{ t.id }})">✕</button>
-                  </div>
+                                            <div>
+                                                <label class="muted">Default Venue</label>
+                                                <select class="input" name="default_venue_id">
+                                                    <option value="">— None —</option>
+                                                    {% for v in venues %}
+                                                    <option value="{{ v.id }}" {% if t.default_venue_id== v.id
+                                                            %}selected{% endif %}>
+                                                        {{ v.name }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
 
-                  <div class="muted" style="font-size:12px; margin-top:6px;">
-                    Teacher: <b>{{ t.name }}</b>
-                  </div>
+                                            <div>
+                                                <label class="muted">Bio</label>
+                                                <textarea class="input" name="bio" rows="3">{{ t.bio or '' }}</textarea>
+                                            </div>
 
-                  <div style="max-height:320px; overflow:auto; padding:10px 0;">
-                    {% for cl in classlevel %}
-                      {% if cl.is_active %}
-                        <label class="class-item">
-                          <input type="checkbox" name="items" value="{{ cl.id }}"
-                                 {% if cl.id in assigned_ids %}checked{% endif %}>
-                          <span><b>{{ cl.code }}</b> — {{ cl.title }}</span>
-                        </label>
-                      {% endif %}
+                                            <div class="row2">
+                                                <div>
+                                                    <label class="muted">Shift Start</label>
+                                                    <input class="input" type="time" name="shift_start_time"
+                                                           value="{{ t.shift_start_time or '' }}">
+                                                </div>
+                                                <div>
+                                                    <label class="muted">Shift End</label>
+                                                    <input class="input" type="time" name="shift_end_time"
+                                                           value="{{ t.shift_end_time or '' }}">
+                                                </div>
+                                            </div>
+
+                                            <div class="row2">
+                                                <div>
+                                                    <label class="muted">Break Start</label>
+                                                    <input class="input" type="time" name="break_start_time"
+                                                           value="{{ t.break_start_time or '' }}">
+                                                </div>
+                                                <div>
+                                                    <label class="muted">Break End</label>
+                                                    <input class="input" type="time" name="break_end_time"
+                                                           value="{{ t.break_end_time or '' }}">
+                                                </div>
+                                            </div>
+
+                                            <label style="display:flex; gap:10px; align-items:center;">
+                                                <input type="checkbox" name="is_active" value="1" {% if t.is_active
+                                                       %}checked{% endif %}>
+                                                <span class="muted">Active</span>
+                                            </label>
+                                        </div>
+
+                                        <div class="popup-actions">
+                                            <button type="submit" class="btn" style="flex:1;">Save Changes</button>
+                                            <button type="button" class="btn cancel" style="flex:1;"
+                                                    onclick="closeEdit({{ t.id }})">Close
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+
+                            </div>
+                        </td>
+
+                        <td>
+                            <button class="btn secondary t-btn" type="button" onclick="openAssign({{ t.id }})">
+                                Assign/Update Classes
+                            </button>
+
+                            {% set assigned_ids = assigned_ids_by_teacher.get(t.id, []) %}
+
+                            <div class="form-popup" id="assign-{{ t.id }}">
+                                <div class="form-backdrop" onclick="closeAssign({{ t.id }})"></div>
+
+                                <form method="post"
+                                      action="{{ url_for('admin.teacherClassAssign', teacher_id=t.id) }}"
+                                      class="form-container">
+
+                                    {% if csrf_token %}<input type="hidden" name="csrf_token"
+                                                              value="{{ csrf_token() }}">{% endif %}
+
+                                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                                        <div style="font-weight:950;">Select Classes</div>
+                                        <button type="button" class="btn secondary t-btn"
+                                                onclick="closeAssign({{ t.id }})">✕
+                                        </button>
+                                    </div>
+
+                                    <div class="muted" style="font-size:12px; margin-top:6px;">
+                                        Teacher: <b>{{ t.name }}</b>
+                                    </div>
+
+                                    <div style="max-height:320px; overflow:auto; padding:10px 0;">
+                                        {% for cl in classlevel %}
+                                        {% if cl.is_active %}
+                                        <label class="class-item">
+                                            <input type="checkbox" name="items" value="{{ cl.id }}"
+                                                   {% if cl.id in assigned_ids %}checked{% endif %}>
+                                            <span><b>{{ cl.code }}</b> — {{ cl.title }}</span>
+                                        </label>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+
+                                    <div class="popup-actions">
+                                        <button type="submit" class="btn" style="flex:1;">Save</button>
+                                        <button type="button" class="btn cancel" style="flex:1;"
+                                                onclick="closeAssign({{ t.id }})">Close
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
                     {% endfor %}
-                  </div>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-                  <div class="popup-actions">
-                    <button type="submit" class="btn" style="flex:1;">Save</button>
-                    <button type="button" class="btn cancel" style="flex:1;" onclick="closeAssign({{ t.id }})">Close</button>
-                  </div>
-                </form>
-              </div>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  </div>
-</div>
-
-
-
-
-
-  <script>
-    // table search
-    (function(){
-      const inp = document.getElementById("teacherSearch");
-      const tbody = document.getElementById("teachersTbody");
-      if(!inp || !tbody) return;
-
-      inp.addEventListener("input", () => {
-        const q = inp.value.trim().toLowerCase();
-        tbody.querySelectorAll("tr").forEach(tr => {
-          const hay = tr.getAttribute("data-search") || "";
-          tr.style.display = hay.includes(q) ? "" : "none";
-        });
-      });
-    })();
-
-    // popup open/close
-    function openAssign(id){
-      const el = document.getElementById("assign-" + id);
-      if (el) el.style.display = "grid";
-    }
-    function closeAssign(id){
-      const el = document.getElementById("assign-" + id);
-      if (el) el.style.display = "none";
-    }
-  </script>
-
-{% endif %}
-
-        {% endfor %}
     {% endif %}
+
 </section>
 
 {# ---------------- MODAL: Add Teacher (unchanged from your file) ---------------- #}
@@ -368,5 +418,38 @@
       const el = document.getElementById("assign-" + id);
       if (el) el.style.display = "none";
     }
+
+  function openEdit(id){
+    const el = document.getElementById("edit-" + id);
+    if (el) el.style.display = "grid";
+  }
+  function closeEdit(id){
+    const el = document.getElementById("edit-" + id);
+    if (el) el.style.display = "none";
+  }
+(function(){
+          const inp = document.getElementById("teacherSearch");
+          const tbody = document.getElementById("teachersTbody");
+          if(!inp || !tbody) return;
+
+          inp.addEventListener("input", () => {
+            const q = inp.value.trim().toLowerCase();
+            tbody.querySelectorAll("tr").forEach(tr => {
+              const hay = tr.getAttribute("data-search") || "";
+              tr.style.display = hay.includes(q) ? "" : "none";
+            });
+          });
+        })();
+
+        // popup open/close
+        function openAssign(id){
+          const el = document.getElementById("assign-" + id);
+          if (el) el.style.display = "grid";
+        }
+        function closeAssign(id){
+          const el = document.getElementById("assign-" + id);
+          if (el) el.style.display = "none";
+        }
+
 </script>
 {% endblock %}

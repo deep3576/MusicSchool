@@ -1,9 +1,10 @@
+from threading import Thread
 from types import SimpleNamespace
 from datetime import datetime, timedelta, time
 from flask import Blueprint, render_template, redirect, url_for, flash, request,current_app, jsonify, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from ..emailer import send_email
+from ..emailer import send_email, fire_and_forget_email
 from ..extensions import db
 from ..forms import SignupForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
 from ..auth_user import AppUser, get_user_by_id
@@ -52,33 +53,37 @@ def _time_to_hms(v) -> str:
     # fallback (string etc.)
     return str(v)
 
-@main_bp.get("/book")
+@main_bp.route(
+    "/book",
+    methods=["get"],
+    endpoint="book"
+)
+@login_required
 def book():
-    # NOTE: no ta.is_booked filter -> includes both Available + Booked windows
-    row = db.session.execute(text("""
-        SELECT
-          MIN(ta.start_at) AS min_start_dt,
-          MAX(ta.end_at)   AS max_end_dt,
-          MIN(TIME(ta.start_at)) AS min_time_day,
-          MAX(TIME(ta.end_at))   AS max_time_day
-        FROM teacher_availability ta
-        JOIN teacher t ON t.id = ta.teacher_id
-        WHERE t.is_active = 1
-          AND ta.start_at >= NOW()
-    """)).mappings().first()
+    row = db.session.execute(text(""" Select MIN(ta.start_at) AS min_start_dt,
+              MAX(ta.end_at)   AS max_end_dt,
+              MIN(TIME(ta.start_at)) AS min_time_day,
+              MAX(TIME(ta.end_at))   AS max_time_day
+    from teacher_availability ta where
+    teacher_id in (Select teacher_id  from teacher_class_level where class_level_id in (Select assigned_class_id  from `user` where id=:user_id)
+    and teacher_id in (Select id  from teacher where is_active =1 )
+    and ta.start_at >= NOW()
+    ) """),{"user_id":current_user.id}).mappings().first()
+
+
 
     bounds = None
     if row and row["min_start_dt"] and row["max_end_dt"]:
         min_start_dt = row["min_start_dt"]
-        max_end_dt   = row["max_end_dt"]
+        max_end_dt = row["max_end_dt"]
 
         bounds = {
-            "min_date": min_start_dt.date().isoformat(),         # YYYY-MM-DD
-            "max_date": max_end_dt.date().isoformat(),           # YYYY-MM-DD
+            "min_date": min_start_dt.date().isoformat(),  # YYYY-MM-DD
+            "max_date": max_end_dt.date().isoformat(),  # YYYY-MM-DD
 
             # IMPORTANT: use time-of-day min/max across ALL slots
-            "min_time": _time_to_hms(row["min_time_day"]),       # HH:MM:SS
-            "max_time": _time_to_hms(row["max_time_day"]),       # HH:MM:SS
+            "min_time": _time_to_hms(row["min_time_day"]),  # HH:MM:SS
+            "max_time": _time_to_hms(row["max_time_day"]),  # HH:MM:SS
         }
 
     return render_template("book.html", bounds=bounds, title="Book")
@@ -264,7 +269,7 @@ def book_submit():
 
             # Pick ONE available slot and lock it (this prevents double-booking)
             slot = db.session.execute(text("""
-                SELECT ta.id, ta.teacher_id,
+                SELECT ta.id, ta.teacher_id,ta.start_at,ta.end_at,
                        COALESCE(ta.venue_id, t.default_venue_id) AS venue_id
                 FROM teacher_availability ta
                 JOIN teacher t ON t.id = ta.teacher_id
@@ -294,6 +299,11 @@ def book_submit():
                 flash("That slot was just taken. Please try another.", "warning")
                 return redirect(url_for("main.book"))
 
+
+
+
+        row=db.session.execute(text(""" Select assigned_class_id from user where id=:id """),{"id":current_user.id}).mappings().first()
+        assigned_class_id = row["assigned_class_id"] if row else None
         # Insert booking row
         db.session.execute(text("""
             INSERT INTO booking
@@ -303,7 +313,7 @@ def book_submit():
             VALUES
               (:teacher_id, :availability_id, :user_id,
                :student_name, :student_email, :student_phone,
-               NULL, :venue_id, 'BOOKED', NOW())
+               :class_level_id, :venue_id, 'BOOKED', NOW())
         """), {
             "teacher_id": slot["teacher_id"],
             "availability_id": slot["id"],
@@ -311,6 +321,7 @@ def book_submit():
             "student_name": current_user.full_name,
             "student_email": current_user.email,
             "student_phone": getattr(current_user, "phone", None),
+            "class_level_id": assigned_class_id,
             "venue_id": slot["venue_id"],
         })
 
@@ -336,11 +347,12 @@ def book_submit():
         <p>Regards,<br>The Rhythm School</p>
         """
 
-        send_email(current_user.email,
-                   subject="Booking Confirmation - The Rhythm School",
-                   body=plain,
-                   html=html)
-
+        fire_and_forget_email(
+            current_user.email,
+            "Booking Confirmation - The Rhythm School",
+            plain,
+            html
+        )
         flash("Booking confirmed!", "success")
         return redirect(url_for("main.my_bookings"))
 
@@ -365,12 +377,18 @@ def my_bookings():
         FROM booking b
         JOIN teacher t ON t.id = b.teacher_id
         JOIN teacher_availability ta ON ta.id = b.availability_id
-        LEFT JOIN class_level cl ON cl.id = b.class_level_id
+        LEFT JOIN user u on u.id=b.user_id
+        LEFT JOIN class_level cl ON cl.id = u.assigned_class_id
         LEFT JOIN venue v ON v.id = b.venue_id
         WHERE b.user_id = :uid
         ORDER BY b.created_at DESC
         LIMIT 300
     """), {"uid": current_user.id}).mappings().all()
+
+
+
+
+
 
     items = [_ns({
         "id": r["id"],
@@ -406,12 +424,12 @@ def signup():
             INSERT INTO user
             (email, password_hash, role,
              first_name, last_name, phone,
-             address_1, address_2, city, province, postal_code, country,
+             address_1, address_2, city, province, postal_code, country,assigned_class_id,
              created_at)
             VALUES
             (:email, :pw, 'student',
              :fn, :ln, :phone,
-             :a1, :a2, :city, :prov, :pc, :country,
+             :a1, :a2, :city, :prov, :pc, :country,11,
              NOW())
         """), {
             "email": email,

@@ -119,13 +119,22 @@ body.admin input[type="time"],
 body.admin select,
 body.admin textarea{
   border: 1px solid rgba(20,70,40,.14);
-  background: rgba(255,255,255,.92);
+  background: rgba(255,255,245,.92);
   border-radius: 12px;
   padding: 10px 12px;
   color: rgba(12,26,18,.92);
   outline: none;
   width: 100%;
 }
+/* Ensure time picker indicator isn't hidden */
+body.admin input[type="time"]::-webkit-calendar-picker-indicator{
+  opacity: 1;
+  display: block !important;
+  cursor: pointer;
+}
+
+
+
 body.admin .input:focus,
 body.admin input:focus,
 body.admin select:focus,

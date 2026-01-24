@@ -4,6 +4,7 @@ import configparser
 import smtplib
 from email.message import EmailMessage
 from pathlib import Path
+from threading import Thread
 
 from flask import current_app
 
@@ -84,5 +85,23 @@ def send_email(to_email: str, subject: str, body: str, html: str | None = None) 
     except Exception as e:
         print(f"❌ FAILED: {e}")
         raise  # important so your app logs it too
+
+
+def send_email_bg(app, to, subject, body, html):
+    # Need app context because thread runs outside request context
+    with app.app_context():
+        try:
+            send_email(to, subject=subject, body=body, html=html)
+        except Exception:
+            app.logger.exception("Background email failed")
+
+def fire_and_forget_email(to, subject, body, html):
+    app = current_app._get_current_object()
+    Thread(
+        target=send_email_bg,
+        args=(app, to, subject, body, html),
+        daemon=True
+    ).start()
+
 
 

@@ -12,6 +12,9 @@ export DYLD_FALLBACK_LIBRARY_PATH="/opt/homebrew/lib:/usr/local/lib:/usr/lib"
 # create your real .env
 cp .env.example .env
 
+
+#ssh -L 3306:deep3576.mysql.pythonanywhere-services.com:3306 deep3576@ssh.pythonanywhere.com
+
 # initialize DB + create admin user
 flask --app run.py init-db
 flask --app run.py create-admin

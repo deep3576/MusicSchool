@@ -286,7 +286,7 @@ def teachers():
     teachers_rows = db.session.execute(text("""
         SELECT
           t.id, t.name, t.email, t.bio, t.is_active, t.class_duration_min,
-          t.default_venue_id,
+          t.default_venue_id,t.shift_start_time,t.shift_end_time,t.break_start_time,t.break_end_time,
           v.name AS default_venue_name,
           COALESCE(GROUP_CONCAT(cl.title ORDER BY cl.title SEPARATOR ', '), '') AS class_titles
         FROM teacher t
@@ -342,6 +342,10 @@ def teachers():
             "email": r["email"],
             "bio": r["bio"],
             "is_active": bool(r["is_active"]),
+            "shift_start_time": r["shift_start_time"],
+            "shift_end_time": r["shift_end_time"],
+            "break_start_time": r["break_start_time"],
+            "break_end_time": r["break_end_time"],
             "class_duration_min": int(r["class_duration_min"] or 45),
             "default_venue_id": r["default_venue_id"],
             "default_venue": (_ns({"id": r["default_venue_id"], "name": r["default_venue_name"]})
@@ -514,6 +518,70 @@ def teacher_delete(teacher_id):
         db.session.rollback()
         flash("Delete failed (teacher may have availability/bookings). Deactivate instead.", "danger")
     return redirect(url_for("admin.teachers"))
+
+
+@admin_bp.post("/teachers/<int:teacher_id>/edit")
+@admin_required
+def teacher_edit(teacher_id):
+    name = (request.form.get("name") or "").strip()
+    if not name:
+        flash("Teacher name required.", "danger")
+        return redirect(url_for("admin.teachers"))
+
+    email = (request.form.get("email") or "").strip() or None
+    bio = (request.form.get("bio") or "").strip() or None
+
+    duration = int(request.form.get("class_duration_min") or 45)
+    duration = max(15, min(duration, 240))
+
+    default_venue_id = request.form.get("default_venue_id")
+    default_venue_id = int(default_venue_id) if default_venue_id else None
+
+    is_active = 1 if request.form.get("is_active") == "1" else 0
+
+    shift_start_time = request.form.get("shift_start_time") or None
+    shift_end_time = request.form.get("shift_end_time") or None
+    break_start_time = request.form.get("break_start_time") or None
+    break_end_time = request.form.get("break_end_time") or None
+
+    db.session.execute(text("""
+        UPDATE teacher
+        SET name = :name,
+            email = :email,
+            bio = :bio,
+            class_duration_min = :duration,
+            is_active = :is_active,
+            default_venue_id = :default_venue_id,
+            shift_start_time = :shift_start_time,
+            shift_end_time = :shift_end_time,
+            break_start_time = :break_start_time,
+            break_end_time = :break_end_time
+        WHERE id = :id
+    """), {
+        "id": teacher_id,
+        "name": name,
+        "email": email,
+        "bio": bio,
+        "duration": duration,
+        "is_active": is_active,
+        "default_venue_id": default_venue_id,
+        "shift_start_time": shift_start_time,
+        "shift_end_time": shift_end_time,
+        "break_start_time": break_start_time,
+        "break_end_time": break_end_time,
+    })
+
+    db.session.commit()
+    flash("Teacher updated.", "success")
+    return redirect(url_for("admin.teachers"))
+
+
+
+
+
+
+
+
 
 
 # -------------------- Teacher Availability --------------------
@@ -859,9 +927,14 @@ def availability_auto_create(teacher_id: int) -> int:
     ).mappings().first()
 
     max_end_date = row["max_end_date"] if row else None
+    if max_end_date is None :
+        max_end_date=date.today() - timedelta(1)
+
     dbg(f"max_end_date={max_end_date}")
 
     month_end_date = date.today() + timedelta(days=29)
+    print(f"Debug:{month_end_date}")
+    print(f"Debug:{max_end_date}")
     max_iters = max_iters_from_dates(month_end_date,max_end_date)
 
     if max_end_date is not None and max_end_date > month_end_date:
