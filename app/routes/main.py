@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, time
 from flask import Blueprint, render_template, redirect, url_for, flash, request,current_app, jsonify, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from ..emailer import send_email, fire_and_forget_email
+from ..emailer import send_email
 from ..extensions import db
 from ..forms import SignupForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
 from ..auth_user import AppUser, get_user_by_id
@@ -347,7 +347,7 @@ def book_submit():
         <p>Regards,<br>The Rhythm School</p>
         """
 
-        fire_and_forget_email(
+        send_email(
             current_user.email,
             "Booking Confirmation - The Rhythm School",
             plain,

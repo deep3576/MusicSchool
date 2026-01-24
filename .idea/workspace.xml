@@ -9,16 +9,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="updations on teachers.html">
-      <change beforePath="$PROJECT_DIR$/.idea/TheSpiritSchool.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TheSpiritSchool.iml" afterDir="false" />
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="updations on booking system">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/emailer.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/emailer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/static/css/admin.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/admin.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/teachers.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/teachers.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run.sh" beforeDir="false" afterPath="$PROJECT_DIR$/run.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/bookings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/bookings.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/users.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/users.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,7 +47,7 @@
   }
 }</component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="ProjectErrors" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
@@ -172,7 +171,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769218099516</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="updations on booking system">
+      <option name="closed" value="true" />
+      <created>1769236200489</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1769236200489</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -181,6 +188,7 @@
     <MESSAGE value="updated on more pages" />
     <MESSAGE value="updations" />
     <MESSAGE value="updations on teachers.html" />
-    <option name="LAST_COMMIT_MESSAGE" value="updations on teachers.html" />
+    <MESSAGE value="updations on booking system" />
+    <option name="LAST_COMMIT_MESSAGE" value="updations on booking system" />
   </component>
 </project>

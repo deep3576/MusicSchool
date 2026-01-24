@@ -215,6 +215,7 @@ body.admin .teachers-table td{
   padding: 12px 10px;
   border-bottom: 1px solid rgba(20,70,40,.10);
   vertical-align: middle;
+  text-align:left;
 }
 
 body.admin .teachers-table tr:hover td{
@@ -386,4 +387,16 @@ body.admin .bell-badge{
   body.admin .btn.secondary{
     width: 100%;
   }
+}
+
+
+/* Past booking highlight */
+body.admin .booking-card.booking-past{
+  border-color: rgba(226, 59, 59, .35) !important;
+  background: rgba(255, 235, 238, .75) !important; /* soft pink */
+}
+
+body.admin .booking-card.booking-past .pill.ok{
+  background: rgba(226, 59, 59, .12);
+  border-color: rgba(226, 59, 59, .25);
 }

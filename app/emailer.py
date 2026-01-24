@@ -51,7 +51,7 @@ def _load_email_config() -> tuple[str, int, str, str, str]:
     return host, port, user, pwd, from_email
 
 
-def send_email(to_email: str, subject: str, body: str, html: str | None = None) -> None:
+def send_email_actual(to_email: str, subject: str, body: str, html: str | None = None) -> None:
     host, port, user, pwd, from_email = _load_email_config()
 
     msg = EmailMessage()
@@ -91,11 +91,11 @@ def send_email_bg(app, to, subject, body, html):
     # Need app context because thread runs outside request context
     with app.app_context():
         try:
-            send_email(to, subject=subject, body=body, html=html)
+            send_email_actual(to, subject=subject, body=body, html=html)
         except Exception:
             app.logger.exception("Background email failed")
 
-def fire_and_forget_email(to, subject, body, html):
+def send_email(to, subject, body, html):
     app = current_app._get_current_object()
     Thread(
         target=send_email_bg,

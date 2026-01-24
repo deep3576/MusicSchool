@@ -259,7 +259,7 @@ def login():
         # If user is already logged in, send them to admin or book page
         if getattr(current_user, "is_admin", False):
             return redirect(url_for("admin.messages"))
-        return redirect(url_for("main.book"))
+        return redirect(url_for("main.index"))
     return redirect(url_for("main.login"))
 
 
@@ -1305,12 +1305,16 @@ def syllabus_delete(item_id):
 
 @admin_bp.get("/bookings")
 @admin_required
+# Select
+# teacher_id,availability_id,user_id,student_name ,student_email,student_phone,class_level_id,venue_id,status
+# from booking b;
 def bookings():
     bookings_rows = db.session.execute(text("""
         SELECT
           b.id,
           b.status,
           b.created_at,
+          b.availability_id,
           b.teacher_id,
           t.name AS teacher_name,
           b.user_id,
@@ -1332,6 +1336,19 @@ def bookings():
         ORDER BY b.created_at DESC
         LIMIT 500
     """)).mappings().all()
+
+    slots = db.session.execute(text("""
+            SELECT id, teacher_id, start_at, end_at
+            FROM teacher_availability
+            WHERE is_booked = 0
+              AND start_at >= NOW()
+            ORDER BY teacher_id, start_at
+        """)).mappings().all()
+
+    slots_by_teacher = {}
+    for s in slots:
+        slots_by_teacher.setdefault(s["teacher_id"], []).append(s)
+
 
     levels_rows = db.session.execute(text("""
         SELECT id, code, title
@@ -1360,7 +1377,7 @@ def bookings():
                       if r["venue_id"] else None),
         }))
 
-    return render_template("admin/bookings.html", title="Bookings", bookings=bookings_list, levels=levels)
+    return render_template("admin/bookings.html", title="Bookings", bookings=bookings_list, levels=levels,now=datetime.now() ,slots_by_teacher=slots_by_teacher)
 
 
 @admin_bp.post("/bookings/<int:booking_id>/set-class")
@@ -1443,6 +1460,150 @@ def booking_absent(booking_id):
 
 
 
+from datetime import datetime
+from sqlalchemy import text
+
+@admin_bp.post("/bookings/<int:booking_id>")
+@admin_required
+def booking_edit(booking_id):
+    new_aid_raw = (request.form.get("new_availability_id") or "").strip()
+    new_aid = int(new_aid_raw) if new_aid_raw.isdigit() else 0
+
+    if not new_aid:
+        flash("Please select a new time slot.", "warning")
+        return redirect(url_for("admin.bookings"))
+
+    try:
+        # 1) Lock booking row (prevents concurrent edits)
+        b = db.session.execute(text("""
+            SELECT id, availability_id, teacher_id, status
+            FROM booking
+            WHERE id = :bid
+            FOR UPDATE
+        """), {"bid": booking_id}).mappings().first()
+
+        if not b:
+            flash("Booking not found.", "danger")
+            return redirect(url_for("admin.bookings"))
+
+        if b["status"] != "BOOKED":
+            flash("Only active bookings can be rescheduled.", "warning")
+            return redirect(url_for("admin.bookings"))
+
+        old_aid = int(b["availability_id"])
+        teacher_id = int(b["teacher_id"])
+
+        if new_aid == old_aid:
+            flash("Same slot selected. No changes made.", "info")
+            return redirect(url_for("admin.bookings"))
+
+        # 2) Lock & validate new slot belongs to same teacher and is free
+        new_slot = db.session.execute(text("""
+            SELECT id, teacher_id, is_booked, start_at, end_at
+            FROM teacher_availability
+            WHERE id = :aid
+            FOR UPDATE
+        """), {"aid": new_aid}).mappings().first()
+
+        if not new_slot:
+            flash("Selected slot not found.", "danger")
+            return redirect(url_for("admin.bookings"))
+
+        if int(new_slot["teacher_id"]) != teacher_id:
+            flash("Selected slot does not belong to this teacher.", "danger")
+            return redirect(url_for("admin.bookings"))
+
+        if int(new_slot["is_booked"]) == 1:
+            flash("Selected slot was already booked. Choose another.", "warning")
+            return redirect(url_for("admin.bookings"))
+
+        # 3) Free old slot (if exists)
+        db.session.execute(text("""
+            UPDATE teacher_availability
+            SET is_booked = 0
+            WHERE id = :old_id
+        """), {"old_id": old_aid})
+
+        # 4) Book new slot
+        db.session.execute(text("""
+            UPDATE teacher_availability
+            SET is_booked = 1
+            WHERE id = :new_id AND is_booked = 0
+        """), {"new_id": new_aid})
+
+        # 5) Update booking to new slot + update created_at or add updated_at if you have it
+        db.session.execute(text("""
+            UPDATE booking
+            SET availability_id = :new_id
+            WHERE id = :bid
+        """), {"new_id": new_aid, "bid": booking_id})
+
+        db.session.commit()
+        flash("Booking time updated successfully.", "success")
+        return redirect(url_for("admin.bookings"))
+
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("booking_edit failed")
+        flash("Update failed. Please try again.", "danger")
+        return redirect(url_for("admin.bookings"))
+
+
+
+# def teacher_edit(teacher_id):
+#     name = (request.form.get("name") or "").strip()
+#     if not name:
+#         flash("Teacher name required.", "danger")
+#         return redirect(url_for("admin.teachers"))
+#
+#     email = (request.form.get("email") or "").strip() or None
+#     bio = (request.form.get("bio") or "").strip() or None
+#
+#     duration = int(request.form.get("class_duration_min") or 45)
+#     duration = max(15, min(duration, 240))
+#
+#     default_venue_id = request.form.get("default_venue_id")
+#     default_venue_id = int(default_venue_id) if default_venue_id else None
+#
+#     is_active = 1 if request.form.get("is_active") == "1" else 0
+#
+#     shift_start_time = request.form.get("shift_start_time") or None
+#     shift_end_time = request.form.get("shift_end_time") or None
+#     break_start_time = request.form.get("break_start_time") or None
+#     break_end_time = request.form.get("break_end_time") or None
+#
+#     db.session.execute(text("""
+#         UPDATE teacher
+#         SET name = :name,
+#             email = :email,
+#             bio = :bio,
+#             class_duration_min = :duration,
+#             is_active = :is_active,
+#             default_venue_id = :default_venue_id,
+#             shift_start_time = :shift_start_time,
+#             shift_end_time = :shift_end_time,
+#             break_start_time = :break_start_time,
+#             break_end_time = :break_end_time
+#         WHERE id = :id
+#     """), {
+#         "id": teacher_id,
+#         "name": name,
+#         "email": email,
+#         "bio": bio,
+#         "duration": duration,
+#         "is_active": is_active,
+#         "default_venue_id": default_venue_id,
+#         "shift_start_time": shift_start_time,
+#         "shift_end_time": shift_end_time,
+#         "break_start_time": break_start_time,
+#         "break_end_time": break_end_time,
+#     })
+#
+#     db.session.commit()
+#     flash("Teacher updated.", "success")
+#     return redirect(url_for("admin.teachers"))
+
+
 
 
 # -------------------- Users (Admin) --------------------
@@ -1451,24 +1612,23 @@ def booking_absent(booking_id):
 @admin_required
 def users():
     rows = db.session.execute(text("""
-        SELECT id, email, role, first_name, last_name, phone, created_at
-        FROM user
-        ORDER BY created_at DESC
+        Select u.id, u.email, u.role, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title  from user u
+        left join class_level cl on u.assigned_class_id = cl.id
+        order by u.created_at desc
         LIMIT 500
     """)).mappings().all()
 
     items = []
     for r in rows:
-        full_name = ((r["first_name"] or "").strip() + " " + (r["last_name"] or "").strip()).strip() or r["email"]
+        #full_name = ((r["first_name"] or "").strip() + " " + (r["last_name"] or "").strip()).strip() or r["email"]
         items.append(_ns({
             "id": r["id"],
             "email": r["email"],
             "role": r["role"],
-            "first_name": r["first_name"],
-            "last_name": r["last_name"],
+            "full_name": r["full_name"],
             "phone": r["phone"],
             "created_at": r["created_at"],
-            "full_name": full_name
+            "assigned_class_id": r["title"]
         }))
 
     return render_template("admin/users.html", title="Users", items=items)
