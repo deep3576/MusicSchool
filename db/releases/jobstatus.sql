@@ -1,0 +1,1 @@
+Alter table teacher_availability ADD Column job_status  ENUM('No Show', 'Present', 'Cancelled') NOT NULL;

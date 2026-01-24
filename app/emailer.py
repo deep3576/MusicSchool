@@ -50,28 +50,27 @@ def _load_email_config() -> tuple[str, int, str, str, str]:
     return host, port, user, pwd, from_email
 
 
-def send_email(to_email: str, subject: str, body: str) -> None:
-    """
-    Sends an email using SMTP credentials stored in instance/config.ini under [email].
-
-    Keeps your original SMTP logic:
-    - SMTP(host, port)
-    - starttls()
-    - login()
-    - send_message()
-    """
+def send_email(to_email: str, subject: str, body: str, html: str | None = None) -> None:
     host, port, user, pwd, from_email = _load_email_config()
 
     msg = EmailMessage()
     msg["From"] = from_email
     msg["To"] = to_email
     msg["Subject"] = subject
+
+    # Always include a plain-text fallback (important)
     msg.set_content(body)
+
+    # If html provided, add it as an alternative part
+    if html:
+        msg.add_alternative(html, subtype="html")
 
     try:
         print(f"Connecting to {host}:{port} ...")
         server = smtplib.SMTP(host, port, timeout=20)
-        server.starttls()  # Secure the connection
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
 
         print("Logging in...")
         server.login(user, pwd)
@@ -84,6 +83,6 @@ def send_email(to_email: str, subject: str, body: str) -> None:
 
     except Exception as e:
         print(f"❌ FAILED: {e}")
-
+        raise  # important so your app logs it too
 
 

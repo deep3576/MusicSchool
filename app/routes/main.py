@@ -315,6 +315,32 @@ def book_submit():
         })
 
         db.session.commit()
+ # Ensure start/end always come from DB slot
+        start_val = slot.get("start_at")
+        end_val = slot.get("end_at")
+
+        plain = f"""Your class is booked.
+        Start: {start_val}
+        End: {end_val}
+
+        Regards,
+        The Rhythm School
+        """
+
+        html = f"""
+        <p>Your class is booked.</p>
+        <table border="1" cellpadding="6" cellspacing="0">
+          <tr><th align="left">Start</th><td>{start_val}</td></tr>
+          <tr><th align="left">End</th><td>{end_val}</td></tr>
+        </table>
+        <p>Regards,<br>The Rhythm School</p>
+        """
+
+        send_email(current_user.email,
+                   subject="Booking Confirmation - The Rhythm School",
+                   body=plain,
+                   html=html)
+
         flash("Booking confirmed!", "success")
         return redirect(url_for("main.my_bookings"))
 

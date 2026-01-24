@@ -1,5 +1,7 @@
 from __future__ import annotations
-from datetime import datetime, date, time, timedelta
+
+from collections import defaultdict
+from datetime import datetime, date, time, timedelta, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, has_request_context
 from ..security import admin_required
 from flask_login import current_user,logout_user, login_required
@@ -7,18 +9,12 @@ from types import SimpleNamespace
 from flask import render_template, request, redirect, url_for, flash, current_app
 from sqlalchemy import text
 from ..extensions import db
-
-try:
-    from ..emailer import send_email
-except Exception:  # pragma: no cover
-    send_email = None
+from ..emailer import send_email
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 def _ns(d: dict) -> SimpleNamespace:
     return SimpleNamespace(**d)
 
-def _ns(d: dict) -> SimpleNamespace:
-    return SimpleNamespace(**d)
 
 @admin_bp.get("/messages")
 @admin_required
@@ -196,6 +192,13 @@ def messages_send():
             return redirect(url_for("admin.messages", email=email))
 
         db.session.commit()
+        print("messages/send/")
+        try:
+            send_email(email, reply_subject, reply_body)
+        except Exception:
+            flash("Reply saved, but email sending failed.", "warning")
+            # Still save reply
+
         flash("Reply saved.", "success")
         return redirect(url_for("admin.messages", email=email))
 
@@ -225,12 +228,6 @@ def reply_message(msg_id):
         flash("Message not found.", "danger")
         return redirect(url_for("admin.messages"))
 
-    if send_email:
-        try:
-            send_email(msg["email"], reply_subject, reply_body)
-        except Exception:
-            flash("Reply saved, but email sending failed.", "warning")
-            # Still save reply
 
     db.session.execute(text("""
         UPDATE contact_message
@@ -240,6 +237,14 @@ def reply_message(msg_id):
         WHERE id = :id
     """), {"sub": reply_subject, "body": reply_body, "id": msg_id})
     db.session.commit()
+
+    print("Here before Try block")
+    print("messages/msg_id/send/")
+    try:
+        send_email(msg["email"], reply_subject, reply_body)
+    except Exception:
+        flash("Reply saved, but email sending failed.", "warning")
+            # Still save reply
 
     flash("Reply saved.", "success")
     return redirect(url_for("admin.messages"))
@@ -282,11 +287,45 @@ def teachers():
         SELECT
           t.id, t.name, t.email, t.bio, t.is_active, t.class_duration_min,
           t.default_venue_id,
-          v.name AS default_venue_name
+          v.name AS default_venue_name,
+          COALESCE(GROUP_CONCAT(cl.title ORDER BY cl.title SEPARATOR ', '), '') AS class_titles
         FROM teacher t
         LEFT JOIN venue v ON v.id = t.default_venue_id
+        LEFT JOIN teacher_class_level tcl
+          ON tcl.teacher_id = t.id AND tcl.is_active = 1
+        LEFT JOIN class_level cl
+          ON cl.id = tcl.class_level_id AND cl.is_active = 1
+        GROUP BY
+          t.id, t.name, t.email, t.bio, t.is_active, t.class_duration_min,
+          t.default_venue_id, v.name
         ORDER BY t.name ASC
     """)).mappings().all()
+
+    assigned_classes = db.session.execute(text("""
+        SELECT
+          tcl.teacher_id,
+          cl.id   AS class_level_id,
+          cl.code,
+          cl.title,
+          cl.description,
+          tcl.assigned_at
+        FROM teacher_class_level tcl
+        JOIN class_level cl ON cl.id = tcl.class_level_id
+        WHERE tcl.is_active = 1
+          AND cl.is_active = 1
+        ORDER BY tcl.teacher_id ASC, cl.title ASC
+    """)).mappings().all()
+    info = db.session.execute(text("""
+        SELECT DATABASE() AS dbname, USER() AS user, @@hostname AS host, @@port AS port
+    """)).mappings().first()
+    print("DEBUG DB:", info)
+
+    classlevel_rows= db.session.execute(text("""
+        SELECT id,code,title,description,is_active FROM class_level WHERE is_active = 1
+    """)).mappings().all()
+    print("DEBUG classlevel_rows count =", len(classlevel_rows))
+    cnt = db.session.execute(text("SELECT COUNT(*) AS c FROM class_level")).mappings().first()
+    print("DEBUG class_level total:", cnt["c"])
 
     venues_rows = db.session.execute(text("""
         SELECT id, name
@@ -306,13 +345,36 @@ def teachers():
             "class_duration_min": int(r["class_duration_min"] or 45),
             "default_venue_id": r["default_venue_id"],
             "default_venue": (_ns({"id": r["default_venue_id"], "name": r["default_venue_name"]})
-                              if r["default_venue_id"] else None)
+                              if r["default_venue_id"] else None),
+            "class_titles": r["class_titles"] or ""
         }))
-
     venues = [_ns({"id": v["id"], "name": v["name"]}) for v in venues_rows]
+    class_levels = [
+        _ns({
+            "id": c["id"],
+            "code": c["code"],
+            "title": c["title"],
+            "description": c["description"],
+            "is_active": bool(c["is_active"])
+        })
+        for c in classlevel_rows
+    ]
+    classes_by_teacher = defaultdict(list)
+    for r in assigned_classes:
+        classes_by_teacher[r["teacher_id"]].append(r)
+    assigned_ids_by_teacher = defaultdict(list)
+    for r in assigned_classes:
+        assigned_ids_by_teacher[r["teacher_id"]].append(int(r["class_level_id"]))
 
-    return render_template("admin/teachers.html", title="Teachers", teachers=teachers, venues=venues)
-
+    return render_template(
+        "admin/teachers.html",
+        title="Teachers",
+        teachers=teachers,
+        venues=venues,
+        classes_by_teacher=classes_by_teacher,
+        classlevel=class_levels,
+        assigned_ids_by_teacher=assigned_ids_by_teacher
+    )
 
 @admin_bp.post("/teachers/create")
 @admin_required
@@ -362,6 +424,49 @@ def teacher_create():
 
     flash("Teacher created.", "success")
     return redirect(url_for("admin.teachers"))
+
+@admin_bp.route(
+    "/teachers/<int:teacher_id>/teacherClassAssign",
+    methods=["POST"],
+    endpoint="teacherClassAssign"
+)
+@admin_required
+def teacherClassAssign(teacher_id):
+    # Multiple selected IDs from the form
+    level_ids = request.form.getlist("items")  # ["1","3","5",...]
+
+    # Clean + convert to ints
+    level_ids = [int(x) for x in level_ids if str(x).isdigit()]
+
+    if not level_ids:
+        flash("Please select at least one class.", "warning")
+        return redirect(url_for("admin.teachers"))
+
+    now = datetime.now(timezone.utc)
+    db.session.execute(text("""
+        Delete from teacher_class_level WHERE teacher_id = ':teacher_id'
+    """), {"teacher_id": teacher_id})
+
+    # 1) deactivate old assignments
+    db.session.execute(text("""
+        UPDATE teacher_class_level
+        SET is_active = 0
+        WHERE teacher_id = :teacher_id
+    """), {"teacher_id": teacher_id})
+
+    # 2) insert new assignments (executemany)
+    db.session.execute(text("""
+        INSERT INTO teacher_class_level (teacher_id, class_level_id, is_active, assigned_at)
+        VALUES (:teacher_id, :class_level_id, 1, :assigned_at)
+    """), [
+        {"teacher_id": teacher_id, "class_level_id": lid, "assigned_at": now}
+        for lid in level_ids
+    ])
+
+    db.session.commit()
+    flash("Classes assigned successfully.", "success")
+    return redirect(url_for("admin.teachers"))
+
 
 
 
@@ -1230,6 +1335,41 @@ def booking_cancel(booking_id):
     db.session.commit()
     flash("Booking cancelled and slot freed.", "success")
     return redirect(url_for("admin.bookings"))
+
+
+
+
+@admin_bp.post("/bookings/<int:booking_id>/absent")
+@admin_required
+def booking_absent(booking_id):
+    # Cancel booking and free slot
+    row = db.session.execute(text("""
+        SELECT availability_id
+        FROM booking
+        WHERE id = :id AND status = 'BOOKED'
+    """), {"id": booking_id}).mappings().first()
+
+    if not row:
+        flash("Booking not active or not found.", "warning")
+        return redirect(url_for("admin.bookings"))
+
+    db.session.execute(text("""
+            UPDATE booking
+            SET status = 'NO SHOW'
+            WHERE id = :id
+        """), {"id": booking_id})
+
+    db.session.execute(text("""
+            UPDATE teacher_availability
+            SET is_booked = 0
+            WHERE id = :aid
+        """), {"aid": row["availability_id"]})
+    db.session.commit()
+    flash("Booking cancelled and slot freed.", "success")
+    return redirect(url_for("admin.bookings"))
+
+
+
 
 
 # -------------------- Users (Admin) --------------------
