@@ -13,6 +13,7 @@
         <a href="{{ url_for('admin.syllabus') }}">Syllabus</a>
         <a href="{{ url_for('admin.bookings') }}" class="active">Bookings</a>
         <a href="{{ url_for('admin.users') }}">Users</a>
+        <a href="{{ url_for('admin.students') }}">Students</a>
     </div>
 
     {% if not bookings %}
@@ -25,7 +26,7 @@
 
         {% for b in bookings %}
 
-        {% set is_past = b.availability and b.availability.end_at and (b.availability.end_at < now) %}
+        {% set is_past = b.availability and b.availability.start_at and (b.availability.start_at < now) %}
 
         <div class="card booking-card
      {% if b.status != 'BOOKED' %}replied{% endif %}
@@ -86,13 +87,22 @@
                     </div>
 
                     <div style="margin-top:14px;">
-                        {% if b.status == 'BOOKED' %}
+                        {% if b.status == 'BOOKED' and  is_past %}
                         <form method="post" action="{{ url_for('admin.booking_absent', booking_id=b.id) }}"
                               onsubmit="return confirm('No Show of Student?');">
                             <button class="btn secondary" type="submit">Mark Absent of Student</button>
                         </form>
+                    </div>
+                    <div style="margin-top:14px;">
+                        <form method="post" action="{{ url_for('admin.booking_present', booking_id=b.id) }}"
+                              onsubmit="return confirm('Mark Present for Student?');">
+                            <button class="btn secondary" type="submit">Mark Present of Student</button>
+                        </form>
                         {% endif %}
                     </div>
+
+
+
                     <!-- Edit button -->
                     <button class="btn secondary t-btn" type="button" onclick="openEdit({{ b.id }})"
                             style="margin-top:14px;">

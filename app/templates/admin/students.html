@@ -1,33 +1,32 @@
+{# app/templates/admin/teachers.html #}
 {% extends "base.html" %}
+
 {% block content %}
 <section class="page">
-  <div class="admin-head">
-    <div>
-      <h1 style="margin:0;">Users</h1>
-      <p class="muted" style="margin:6px 0 0;">Search and edit users. Assign class per student here.</p>
+    <div class="page-head"
+         style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+        <div>
+            <h1 style="margin:0;">Students</h1>
+            <p class="muted" style="margin:6px 0 0;">Manage Students, check performance , and manage availability
+                slots.</p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn" type="button" id="openAddTeacher">+ Add Teacher</button>
+        </div>
     </div>
 
-    <form method="get" class="admin-search">
-      <input class="input" type="text" name="q" value="{{ q or '' }}" placeholder="Search name, email, phone">
-      <button class="btn" type="submit">Search</button>
-      {% if q %}<a class="btn secondary" href="{{ url_for('admin.users') }}">Clear</a>{% endif %}
-    </form>
-  </div>
+    <div class="card admin-nav" style="margin-top:14px;">
+        <a href="{{ url_for('admin.messages') }}">Messages</a>
+        <a href="{{ url_for('admin.teachers') }}">Teachers</a>
+        <a href="{{ url_for('admin.venues') }}">Venues</a>
+        <a href="{{ url_for('admin.syllabus') }}">Syllabus</a>
+        <a href="{{ url_for('admin.bookings') }}">Bookings</a>
+        <a href="{{ url_for('admin.users') }}">Users</a>
+        <a href="{{ url_for('admin.students') }}" class="active">Students</a>
+    </div>
 
-
-  {# Admin navigation (keep your existing links if you have them) #}
-  <div class="card admin-nav" style="margin-top:14px;">
-    <a href="{{ url_for('admin.messages') }}">Messages</a>
-    <a href="{{ url_for('admin.teachers') }}" >Teachers</a>
-    <a href="{{ url_for('admin.venues') }}">Venues</a>
-    <a href="{{ url_for('admin.syllabus') }}">Syllabus</a>
-    <a href="{{ url_for('admin.bookings') }}">Bookings</a>
-    <a href="{{ url_for('admin.users') }}" class="active">Users</a>
-            <a href="{{ url_for('admin.students') }}">Students</a>
-  </div>
-
-
-  <div class="card">
+   <div class="card">
     {% if not items %}
       <p class="muted" style="margin:0;">No users found.</p>
     {% else %}
@@ -37,7 +36,7 @@
             <tr>
               <th>User</th>
               <th>Email</th>
-              <th>Role</th>
+
               <th>Assigned Class</th>
               <th>Phone</th>
               <th style="width:120px;">Action</th>
@@ -48,11 +47,10 @@
               <tr>
                 <td style="font-weight:900;">{{ u.full_name }}</td>
                 <td>{{ u.email }}</td>
-                <td><span class="pill">{{ u.role }}</span></td>
                 <td>{{ u.assigned_class_id }}</td>
                 <td>{{ u.phone }}</td>
                 <td>
-                  <a class="btn small" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Edit</a>
+                  <a class="btn small" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Open Profile</a>
                 </td>
               </tr>
             {% endfor %}

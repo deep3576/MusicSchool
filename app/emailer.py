@@ -95,7 +95,7 @@ def send_email_bg(app, to, subject, body, html):
         except Exception:
             app.logger.exception("Background email failed")
 
-def send_email(to, subject, body, html):
+def send_email(to, subject, body, html:str | None = None):
     app = current_app._get_current_object()
     Thread(
         target=send_email_bg,

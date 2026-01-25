@@ -9,15 +9,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="updations on booking system">
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="Add functionality to Change timeslot after booking.">
+      <change afterPath="$PROJECT_DIR$/app/templates/admin/students.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/emailer.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/emailer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/static/css/admin.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/admin.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/admin/bookings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/bookings.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/messages.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/messages.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/syllabus.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/syllabus.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/teacher_availability.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/teacher_availability.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/teachers.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/teachers.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/admin/users.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/users.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/venues.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/venues.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,23 +61,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.admin.executor": "Run",
-    "Python.check_db.executor": "Run",
-    "Python.email_test.executor": "Run",
-    "Python.emailer.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.models.executor": "Run",
-    "Python.run.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "run.code.analysis.last.selected.profile": "pProject Default",
-    "settings.editor.selected.configurable": "preferences.lookFeel"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.admin.executor&quot;: &quot;Run&quot;,
+    &quot;Python.check_db.executor&quot;: &quot;Run&quot;,
+    &quot;Python.email_test.executor&quot;: &quot;Run&quot;,
+    &quot;Python.emailer.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.models.executor&quot;: &quot;Run&quot;,
+    &quot;Python.run.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -179,7 +183,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769236200489</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Add functionality to Change timeslot after booking.">
+      <option name="closed" value="true" />
+      <created>1769281687391</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1769281687391</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -189,6 +201,7 @@
     <MESSAGE value="updations" />
     <MESSAGE value="updations on teachers.html" />
     <MESSAGE value="updations on booking system" />
-    <option name="LAST_COMMIT_MESSAGE" value="updations on booking system" />
+    <MESSAGE value="Add functionality to Change timeslot after booking." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add functionality to Change timeslot after booking." />
   </component>
 </project>

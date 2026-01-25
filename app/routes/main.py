@@ -331,6 +331,7 @@ def book_submit():
         end_val = slot.get("end_at")
 
         plain = f"""Your class is booked.
+
         Start: {start_val}
         End: {end_val}
 
@@ -339,12 +340,91 @@ def book_submit():
         """
 
         html = f"""
-        <p>Your class is booked.</p>
-        <table border="1" cellpadding="6" cellspacing="0">
-          <tr><th align="left">Start</th><td>{start_val}</td></tr>
-          <tr><th align="left">End</th><td>{end_val}</td></tr>
-        </table>
-        <p>Regards,<br>The Rhythm School</p>
+        <!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Booking Confirmation</title>
+          </head>
+          <body style="margin:0;padding:0;background:#f5f7fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f7fb;padding:24px 0;">
+              <tr>
+                <td align="center" style="padding:0 16px;">
+                  <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px rgba(17,24,39,0.08);">
+                    <!-- Header -->
+                    <tr>
+                      <td style="padding:22px 26px;background:linear-gradient(135deg,#111827,#2563eb);">
+                        <div style="font-size:16px;font-weight:700;letter-spacing:0.2px;color:#ffffff;">
+                          The Rhythm School
+                        </div>
+                        <div style="margin-top:4px;font-size:13px;color:rgba(255,255,255,0.85);">
+                          Booking Confirmation
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                      <td style="padding:26px;">
+                        <div style="font-size:20px;font-weight:700;line-height:1.3;margin:0 0 10px 0;">
+                          Your class is booked 🎶
+                        </div>
+
+                        <div style="font-size:14px;line-height:1.6;color:#374151;margin:0 0 16px 0;">
+                          Thanks! Your booking is confirmed. Here are your class details:
+                        </div>
+
+                        <!-- Details table -->
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+                               style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+                          <tr>
+                            <td style="padding:12px 14px;background:#f9fafb;border-bottom:1px solid #e5e7eb;width:140px;font-size:13px;font-weight:700;color:#111827;">
+                              Start
+                            </td>
+                            <td style="padding:12px 14px;background:#ffffff;border-bottom:1px solid #e5e7eb;font-size:13px;color:#111827;">
+                              {start_val}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding:12px 14px;background:#f9fafb;width:140px;font-size:13px;font-weight:700;color:#111827;">
+                              End
+                            </td>
+                            <td style="padding:12px 14px;background:#ffffff;font-size:13px;color:#111827;">
+                              {end_val}
+                            </td>
+                          </tr>
+                        </table>
+
+                        <div style="margin-top:16px;font-size:13px;line-height:1.6;color:#6b7280;">
+                          If you need to reschedule, reply to this email and we’ll help you.
+                        </div>
+
+                        <div style="margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:13px;line-height:1.6;color:#374151;">
+                          Regards,<br>
+                          <span style="font-weight:700;color:#111827;">The Rhythm School</span>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                      <td style="padding:18px 26px;background:#f9fafb;border-top:1px solid #eef2f7;">
+                        <div style="font-size:12px;color:#9ca3af;line-height:1.6;">
+                          Please do not share this email publicly. If you did not make this booking, reply to this message.
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <div style="max-width:600px;margin:12px auto 0 auto;font-size:11px;color:#9ca3af;line-height:1.5;padding:0 10px;">
+                    © {__import__("datetime").datetime.now().year} The Rhythm School
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
         """
 
         send_email(
@@ -353,6 +433,7 @@ def book_submit():
             plain,
             html
         )
+
         flash("Booking confirmed!", "success")
         return redirect(url_for("main.my_bookings"))
 
@@ -522,7 +603,94 @@ def forgotpassword():
             token = s.dumps({"uid": row["id"]}, salt="reset-password")
 
             reset_url = url_for("main.reset_password", token=token, _external=True)
-            send_email(email, subject="Reset your password", body=reset_url)
+
+            html = f"""
+            <!doctype html>
+            <html>
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Reset your password</title>
+              </head>
+              <body style="margin:0;padding:0;background:#f5f7fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f7fb;padding:24px 0;">
+                  <tr>
+                    <td align="center" style="padding:0 16px;">
+                      <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px rgba(17,24,39,0.08);">
+                        <!-- Header -->
+                        <tr>
+                          <td style="padding:22px 26px;background:linear-gradient(135deg,#111827,#2563eb);">
+                            <div style="font-size:16px;font-weight:700;letter-spacing:0.2px;color:#ffffff;">
+                              The Rhythm School
+                            </div>
+                            <div style="margin-top:4px;font-size:13px;color:rgba(255,255,255,0.85);">
+                              Secure account access
+                            </div>
+                          </td>
+                        </tr>
+
+                        <!-- Body -->
+                        <tr>
+                          <td style="padding:26px;">
+                            <div style="font-size:20px;font-weight:700;line-height:1.3;margin:0 0 10px 0;">
+                              Reset your password
+                            </div>
+
+                            <div style="font-size:14px;line-height:1.6;color:#374151;margin:0 0 16px 0;">
+                              We received a request to reset your password. Click the button below to choose a new password.
+                            </div>
+
+                            <!-- Button -->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:18px 0 18px 0;">
+                              <tr>
+                                <td align="center" bgcolor="#2563eb" style="border-radius:12px;">
+                                  <a href="{reset_url}"
+                                     style="display:inline-block;padding:12px 18px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">
+                                    Reset Password
+                                  </a>
+                                </td>
+                              </tr>
+                            </table>
+
+                            <div style="font-size:13px;line-height:1.6;color:#6b7280;margin:0 0 12px 0;">
+                              If the button doesn’t work, copy and paste this link into your browser:
+                            </div>
+
+                            <div style="font-size:12px;line-height:1.6;word-break:break-all;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px;color:#111827;">
+                              <a href="{reset_url}" style="color:#2563eb;text-decoration:underline;">{reset_url}</a>
+                            </div>
+
+                            <div style="font-size:13px;line-height:1.6;color:#6b7280;margin:16px 0 0 0;">
+                              If you didn’t request this, you can safely ignore this email—your password won’t change.
+                            </div>
+
+                            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.6;color:#9ca3af;">
+                              For security, this link may expire after a short time.
+                            </div>
+                          </td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                          <td style="padding:18px 26px;background:#f9fafb;border-top:1px solid #eef2f7;">
+                            <div style="font-size:12px;color:#9ca3af;line-height:1.6;">
+                              © {__import__("datetime").datetime.now().year} The Rhythm School. All rights reserved.
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <div style="max-width:600px;margin:12px auto 0 auto;font-size:11px;color:#9ca3af;line-height:1.5;padding:0 10px;">
+                        Tip: If you have trouble resetting your password, reply to this email and we’ll help you out.
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </body>
+            </html>
+            """
+
+            send_email(email, subject="Reset your password", body=reset_url ,html=html)
             print("RESET LINK:", reset_url)  # for testing
 
         return redirect(url_for("main.login"))

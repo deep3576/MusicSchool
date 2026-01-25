@@ -1458,6 +1458,31 @@ def booking_absent(booking_id):
     flash("Booking cancelled and slot freed.", "success")
     return redirect(url_for("admin.bookings"))
 
+@admin_bp.post("/bookings/<int:booking_id>/present")
+@admin_required
+def booking_present(booking_id):
+    # Cancel booking and free slot
+    row = db.session.execute(text("""
+        SELECT availability_id
+        FROM booking
+        WHERE id = :id AND status = 'BOOKED'
+    """), {"id": booking_id}).mappings().first()
+
+    if not row:
+        flash("Booking not active or not found.", "warning")
+        return redirect(url_for("admin.bookings"))
+
+    db.session.execute(text("""
+            UPDATE booking
+            SET status = 'PRESENT'
+            WHERE id = :id
+        """), {"id": booking_id})
+
+    db.session.commit()
+    flash("Student Marked as PRESENT for this booking.", "success")
+    return redirect(url_for("admin.bookings"))
+
+
 
 
 from datetime import datetime
@@ -1828,3 +1853,34 @@ def inject_admin_message_badge():
         count = 0
 
     return {"admin_unreplied_count": int(count)}
+
+
+
+# -------------------- Students (Admin) --------------------
+
+@admin_bp.get("/students")
+@admin_required
+def students():
+    rows = db.session.execute(text("""
+        Select u.id, u.email, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title  from user u
+        left join class_level cl on u.assigned_class_id = cl.id
+        where u.role='student'
+        order by u.created_at desc
+        LIMIT 500
+    """)).mappings().all()
+
+    items = []
+    for r in rows:
+        #full_name = ((r["first_name"] or "").strip() + " " + (r["last_name"] or "").strip()).strip() or r["email"]
+        items.append(_ns({
+            "id": r["id"],
+            "email": r["email"],
+            "full_name": r["full_name"],
+            "phone": r["phone"],
+            "created_at": r["created_at"],
+            "assigned_class_id": r["title"]
+        }))
+
+    return render_template("admin/students.html", title="Students", items=items)
+
+
