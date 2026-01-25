@@ -1,7 +1,6 @@
 # app/__init__.py
 import os
 import configparser
-from datetime import date
 from flask import Flask
 from flask_apscheduler import APScheduler
 from .extensions import db, login_manager
@@ -65,7 +64,7 @@ def create_app() -> Flask:
     register_user_loader(login_manager)
 
     # Blueprints
-    from .routes.main import main_bp
+    from .routes.student import main_bp
     from .routes.admin import admin_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
