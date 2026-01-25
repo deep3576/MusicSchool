@@ -9,20 +9,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="Add functionality to Change timeslot after booking.">
-      <change afterPath="$PROJECT_DIR$/app/templates/admin/students.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/emailer.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/emailer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/bookings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/bookings.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/messages.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/messages.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/syllabus.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/syllabus.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/teacher_availability.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/teacher_availability.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/teachers.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/teachers.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/users.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/users.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/venues.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/venues.html" afterDir="false" />
-    </list>
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="Add students.html" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -191,7 +178,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769281687391</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Add students.html">
+      <option name="closed" value="true" />
+      <created>1769314679953</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1769314679953</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -202,6 +197,7 @@
     <MESSAGE value="updations on teachers.html" />
     <MESSAGE value="updations on booking system" />
     <MESSAGE value="Add functionality to Change timeslot after booking." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add functionality to Change timeslot after booking." />
+    <MESSAGE value="Add students.html" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add students.html" />
   </component>
 </project>
