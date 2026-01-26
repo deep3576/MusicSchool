@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from collections import defaultdict
 from datetime import datetime, date, time, timedelta, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, has_request_context
@@ -7,7 +6,9 @@ from ..security import admin_required
 from flask_login import current_user,logout_user, login_required
 from types import SimpleNamespace
 from flask import render_template, request, redirect, url_for, flash, current_app
+from datetime import datetime
 from sqlalchemy import text
+from werkzeug.security import generate_password_hash
 from ..extensions import db
 from ..emailer import send_email
 
@@ -259,8 +260,8 @@ def login():
         # If user is already logged in, send them to admin or book page
         if getattr(current_user, "is_admin", False):
             return redirect(url_for("admin.messages"))
-        return redirect(url_for("main.index"))
-    return redirect(url_for("main.login"))
+        return redirect(url_for("student.index"))
+    return redirect(url_for("student.login"))
 
 
 
@@ -268,9 +269,8 @@ def login():
 @admin_bp.get("/logout")
 @login_required
 def logout():
-    # same logout behavior as main.logout
     logout_user()
-    return redirect(url_for("main.logout"))
+    return redirect(url_for("student.logout"))
 
 
 
@@ -1485,8 +1485,6 @@ def booking_present(booking_id):
 
 
 
-from datetime import datetime
-from sqlalchemy import text
 
 @admin_bp.post("/bookings/<int:booking_id>")
 @admin_required
@@ -1854,7 +1852,7 @@ def user_create():
         flash("User already exists.", "warning")
         return redirect(url_for("admin.users"))
 
-    from werkzeug.security import generate_password_hash
+
     pw_hash = generate_password_hash(password)
 
     db.session.execute(text("""

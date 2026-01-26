@@ -25,7 +25,7 @@
         Please login to book a class.
       </div>
       <div style="margin-top:10px;">
-        <a class="btn" href="{{ url_for('main.login') }}">Login</a>
+        <a class="btn" href="{{ url_for('student.login') }}">Login</a>
       </div>
     </div>
   {% endif %}
@@ -68,7 +68,7 @@
   <!-- Booking POST form -->
   <form id="bookForm"
         method="post"
-        action="{{ url_for('main.book_submit') }}"
+        action="{{ url_for('student.book_submit') }}"
         style="position:absolute; left:-9999px; top:-9999px;">
     <input type="hidden" name="availability_id" id="availability_id">
     <input type="hidden" name="start_at" id="start_at">
@@ -245,8 +245,8 @@
   }
   const endExclusive = addDays(maxDate, 1);
 
-  const summaryUrl = "{{ url_for('main.api_availability_summary') }}";
-  const slotsUrl = "{{ url_for('main.api_all_availability') }}";
+  const summaryUrl = "{{ url_for('student.api_availability_summary') }}";
+  const slotsUrl = "{{ url_for('student.api_all_availability') }}";
   const isLoggedIn = {{ "true" if current_user.is_authenticated else "false" }};
 
   const selectedDateLabel = document.getElementById("selectedDateLabel");
@@ -358,7 +358,7 @@
       if (!isLoggedIn) {
         const btn = document.createElement("a");
         btn.className = "btn secondary";
-        btn.href = "{{ url_for('main.login') }}";
+        btn.href = "{{ url_for('student.login') }}";
         btn.textContent = "Login to book";
         right.appendChild(btn);
 

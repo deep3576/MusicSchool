@@ -9,19 +9,24 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="starting of new log in for teachers.">
-      <change afterPath="$PROJECT_DIR$/app/static/img/tanpura_girl2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/auth/choose_role.html" afterDir="false" />
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="add multi Role handling">
+      <change afterPath="$PROJECT_DIR$/app/templates/teacher/dashboard.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/auth_user.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/auth_user.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/extensions.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/extensions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/student.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/student.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/static/css/student.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/student.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/static/css/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/user_edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/user_edit.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/teacher.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/teacher.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/security.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/security.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/venues.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/venues.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admissions.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admissions.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/auth/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/auth/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/auth/reset_password.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/auth/reset_password.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/releases/signup.sql" beforeDir="false" afterPath="$PROJECT_DIR$/db/releases/signup.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/book.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/book.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/booking.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/booking.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -211,7 +216,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769367862830</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="add multi Role handling">
+      <option name="closed" value="true" />
+      <created>1769402593472</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1769402593472</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -224,6 +237,7 @@
     <MESSAGE value="Add functionality to Change timeslot after booking." />
     <MESSAGE value="Add students.html" />
     <MESSAGE value="starting of new log in for teachers." />
-    <option name="LAST_COMMIT_MESSAGE" value="starting of new log in for teachers." />
+    <MESSAGE value="add multi Role handling" />
+    <option name="LAST_COMMIT_MESSAGE" value="add multi Role handling" />
   </component>
 </project>

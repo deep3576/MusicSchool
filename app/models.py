@@ -46,6 +46,9 @@ class User(UserMixin, db.Model):
     def is_admin(self) -> bool:
         return (self.role or "").lower() == "admin"
 
+    @property
+    def is_teacher(self) -> bool:
+        return (self.role or "").lower() == "teacher"
 
 @login_manager.user_loader
 def load_user(user_id: str):

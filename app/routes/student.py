@@ -14,7 +14,7 @@ from weasyprint import HTML
 from ..forms import ContactForm
 
 
-main_bp = Blueprint("main", __name__)
+main_bp = Blueprint("student", __name__)
 
 
 def _ns(d: dict) -> SimpleNamespace:
@@ -111,7 +111,7 @@ def contact():
             db.session.commit()
 
             flash("Message sent! We’ll reply soon.", "success")
-            return redirect(url_for("main.contact"))
+            return redirect(url_for("student.contact"))
 
         except Exception:
             db.session.rollback()
@@ -220,7 +220,7 @@ def book_submit():
 
     if not availability_id and (not start_s or not end_s):
         flash("Please select a slot.", "danger")
-        return redirect(url_for("main.book"))
+        return redirect(url_for("student.book"))
 
     try:
         # ------------------------------------------------------------
@@ -243,7 +243,7 @@ def book_submit():
             if updated != 1:
                 db.session.rollback()
                 flash("That slot is no longer available. Please pick another.", "warning")
-                return redirect(url_for("main.book"))
+                return redirect(url_for("student.book"))
 
             # Fetch details for booking insert
             slot = db.session.execute(text("""
@@ -258,7 +258,7 @@ def book_submit():
             if not slot:
                 db.session.rollback()
                 flash("Invalid slot selected.", "danger")
-                return redirect(url_for("main.book"))
+                return redirect(url_for("student.book"))
 
         # ------------------------------------------------------------
         # B) Booking by time-window (start_at/end_at) => pick any teacher
@@ -286,7 +286,7 @@ def book_submit():
             if not slot:
                 db.session.rollback()
                 flash("Not available for that time. Please choose another slot.", "warning")
-                return redirect(url_for("main.book"))
+                return redirect(url_for("student.book"))
 
             # Now claim it by id (simple single-table UPDATE; no ORDER BY)
             updated = db.session.execute(text("""
@@ -298,7 +298,7 @@ def book_submit():
             if updated != 1:
                 db.session.rollback()
                 flash("That slot was just taken. Please try another.", "warning")
-                return redirect(url_for("main.book"))
+                return redirect(url_for("student.book"))
 
 
 
@@ -436,14 +436,14 @@ def book_submit():
         )
 
         flash("Booking confirmed!", "success")
-        return redirect(url_for("main.my_bookings"))
+        return redirect(url_for("student.my_bookings"))
 
     except Exception as e:
         db.session.rollback()
         dbg(f"ERROR: {repr(e)}")
         current_app.logger.exception("book_submit failed")
         flash("Booking failed. Please try again.", "danger")
-        return redirect(url_for("main.book"))
+        return redirect(url_for("student.book"))
 
 
 @main_bp.get("/my-bookings")
@@ -489,7 +489,7 @@ def my_bookings():
 @main_bp.route("/signup", methods=["GET", "POST"])
 def signup():
     if current_user.is_authenticated:
-        return redirect(url_for("main.book"))
+        return redirect(url_for("student.book"))
 
     form = SignupForm()
     if form.validate_on_submit():
@@ -498,7 +498,7 @@ def signup():
         exists = db.session.execute(text("SELECT id FROM user WHERE email = :email"), {"email": email}).first()
         if exists:
             flash("Email already registered. Please login.", "warning")
-            return redirect(url_for("main.login"))
+            return redirect(url_for("student.login"))
 
         pw_hash = generate_password_hash(form.password.data)
 
@@ -547,7 +547,7 @@ def signup():
         u = get_user_by_id(int(new_id))
         login_user(u)
         flash("Account created!", "success")
-        return redirect(url_for("main.book"))
+        return redirect(url_for("student.book"))
 
     return render_template("auth/signup.html", title="Sign Up", form=form)
 
@@ -622,8 +622,8 @@ def login():
         roles = current_user.role or []
         active = session.get("active_role")
         if len(roles) > 1 and active not in roles:
-            return redirect(url_for("main.choose_role"))
-        return redirect(url_for("main.after_login_redirect"))
+            return redirect(url_for("student.choose_role"))
+        return redirect(url_for("student.after_login_redirect"))
 
     form = LoginForm()
     if form.validate_on_submit():
@@ -662,11 +662,11 @@ def login():
 
         # ✅ Multi-role routing
         if len(roles) > 1:
-            return redirect(url_for("main.choose_role"))
+            return redirect(url_for("student.choose_role"))
 
         # Only one role -> auto set it
         session["active_role"] = roles[0]
-        return redirect(url_for("main.after_login_redirect"))
+        return redirect(url_for("student.after_login_redirect"))
 
     return render_template("auth/login.html", title="Login", form=form)
 
@@ -678,11 +678,11 @@ def choose_role():
     roles = current_user.role or []
     if not roles:
         flash("No roles assigned. Contact admin.", "danger")
-        return redirect(url_for("main.logout"))  # or safe page
+        return redirect(url_for("student.logout"))  # or safe page
 
     if len(roles) == 1:
         session["active_role"] = roles[0]
-        return redirect(url_for("main.after_login_redirect"))
+        return redirect(url_for("student.after_login_redirect"))
 
     return render_template("auth/choose_role.html", roles=roles)
 
@@ -695,10 +695,10 @@ def choose_role_post():
 
     if role not in roles:
         flash("Invalid role selection.", "danger")
-        return redirect(url_for("main.choose_role"))
+        return redirect(url_for("student.choose_role"))
 
     session["active_role"] = role
-    return redirect(url_for("main.after_login_redirect"))
+    return redirect(url_for("student.after_login_redirect"))
 
 @main_bp.get("/after-login")
 @login_required
@@ -708,7 +708,7 @@ def after_login_redirect():
 
     # if multiple roles but not chosen yet
     if len(roles) > 1 and (not role or role not in roles):
-        return redirect(url_for("main.choose_role"))
+        return redirect(url_for("student.choose_role"))
 
     # if single role, role may be missing, set it
     if len(roles) == 1 and (not role or role not in roles):
@@ -719,9 +719,8 @@ def after_login_redirect():
     if role == "admin":
         return redirect(url_for("admin.messages"))  # change to your route
     if role == "teacher":
-        return "Teacher Dashboard will be here."
-#        return redirect(url_for("teacher.dashboard"))  # change to your route
-    return redirect(url_for("main.book"))  # student default
+        return redirect(url_for("teacher.dashboard"))
+    return redirect(url_for("student.book"))  # student default
 
 
 
@@ -731,7 +730,7 @@ def after_login_redirect():
 def logout():
     logout_user()
     flash("Logged out.", "info")
-    return redirect(url_for("main.index"))
+    return redirect(url_for("student.index"))
 
 
 def _serializer():
@@ -758,7 +757,7 @@ def forgotpassword():
             s = _serializer()
             token = s.dumps({"uid": row["id"]}, salt="reset-password")
 
-            reset_url = url_for("main.reset_password", token=token, _external=True)
+            reset_url = url_for("student.reset_password", token=token, _external=True)
 
             html = f"""
             <!doctype html>
@@ -849,7 +848,7 @@ def forgotpassword():
             send_email(email, subject="Reset your password", body=reset_url ,html=html)
             print("RESET LINK:", reset_url)  # for testing
 
-        return redirect(url_for("main.login"))
+        return redirect(url_for("student.login"))
 
     return render_template("auth/forgotpassword.html", form=form)
 
@@ -866,10 +865,10 @@ def reset_password(token):
         uid = int(data["uid"])
     except SignatureExpired:
         flash("Reset link expired. Please request again.", "danger")
-        return redirect(url_for("main.forgotpassword"))
+        return redirect(url_for("student.forgotpassword"))
     except BadSignature:
         flash("Invalid reset link.", "danger")
-        return redirect(url_for("main.forgotpassword"))
+        return redirect(url_for("student.forgotpassword"))
 
     # ✅ IMPORTANT: use your real table name: "user"
     row = db.session.execute(
@@ -879,7 +878,7 @@ def reset_password(token):
 
     if not row:
         flash("Invalid reset link (user not found).", "danger")
-        return redirect(url_for("main.forgotpassword"))
+        return redirect(url_for("student.forgotpassword"))
 
     email = row["email"]
 
@@ -905,7 +904,7 @@ def reset_password(token):
 
         db.session.commit()
         flash("Password updated. Please login.", "success")
-        return redirect(url_for("main.login"))
+        return redirect(url_for("student.login"))
 
     return render_template("auth/reset_password.html", form=form, title="Reset Password", email=email)
 
