@@ -67,6 +67,13 @@ body{
   border:1px solid var(--border);
   background: rgba(255,255,255,.6);
 }
+.pill{
+  border-radius:999px;
+  border:1px solid var(--border);
+  padding:8px 10px;
+background: rgba(255,255,255,.6);
+  border-color: rgba(226, 59, 59, .25);
+}
 
 /* Cards / sections */
 .card{
@@ -484,3 +491,4 @@ select.input:-webkit-autofill:focus {
   }
   .brand-mark img{ padding: 6px; }
 }
+

@@ -1,17 +1,18 @@
-from threading import Thread
 from types import SimpleNamespace
 from datetime import datetime, timedelta, time
-from flask import Blueprint, render_template, redirect, url_for, flash, request,current_app, jsonify, make_response
+from flask import Blueprint, request, current_app, jsonify, make_response, redirect, url_for, flash, render_template, \
+    session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from ..emailer import send_email
 from ..extensions import db
 from ..forms import SignupForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
-from ..auth_user import AppUser, get_user_by_id
+from ..auth_user import AppUser
 from sqlalchemy import text
 from itsdangerous import BadSignature, SignatureExpired ,URLSafeTimedSerializer
 from weasyprint import HTML
 from ..forms import ContactForm
+
 
 main_bp = Blueprint("main", __name__)
 
@@ -33,7 +34,7 @@ def _parse_fc_iso(s: str) -> datetime:
 
 @main_bp.get("/")
 def index():
-    return render_template("index.html", title="The Spirit School")
+    return render_template("index.html", title="The Rhythm School")
 
 
 
@@ -501,16 +502,17 @@ def signup():
 
         pw_hash = generate_password_hash(form.password.data)
 
+        # Insert user
         db.session.execute(text("""
             INSERT INTO user
-            (email, password_hash, role,
+            (email, password_hash, 
              first_name, last_name, phone,
-             address_1, address_2, city, province, postal_code, country,assigned_class_id,
+             address_1, address_2, city, province, postal_code, country, assigned_class_id,
              created_at)
             VALUES
-            (:email, :pw, 'student',
+            (:email, :pw,
              :fn, :ln, :phone,
-             :a1, :a2, :city, :prov, :pc, :country,11,
+             :a1, :a2, :city, :prov, :pc, :country, 11,
              NOW())
         """), {
             "email": email,
@@ -525,7 +527,21 @@ def signup():
             "pc": (form.postal_code.data or "").strip() or None,
             "country": (form.country.data or "").strip() or None,
         })
+
+        # Get the ID of the row we just inserted (MySQL)
+        user_id = db.session.execute(text("SELECT LAST_INSERT_ID()")).scalar()
+
+        # Insert role for THAT user
+        db.session.execute(text("""
+            INSERT INTO user_role (user_id, role, assigned_at)
+            VALUES (:uid, 'student', NOW())
+        """), {"uid": user_id})
+
         db.session.commit()
+
+        # Now login
+        u = get_user_by_id(int(user_id))
+        login_user(u)
 
         new_id = db.session.execute(text("SELECT id FROM user WHERE email=:email"), {"email": email}).scalar()
         u = get_user_by_id(int(new_id))
@@ -536,38 +552,178 @@ def signup():
     return render_template("auth/signup.html", title="Sign Up", form=form)
 
 
+
+# -----------------------------
+# Helpers
+# -----------------------------
+def get_roles_for_user(user_id: int) -> list[str]:
+    rows = db.session.execute(text("""
+        SELECT ur.role
+        FROM user_role ur
+        WHERE ur.user_id = :uid
+          AND ur.is_active = 1
+    """), {"uid": user_id}).mappings().all()
+
+    allowed = {"student", "teacher", "admin"}
+    roles = sorted({
+        (r["role"] or "").strip().lower()
+        for r in rows
+        if (r["role"] or "").strip()
+    } & allowed)
+
+    return roles
+
+
+def get_user_by_id(user_id: int):
+    row = db.session.execute(text("""
+        SELECT id, email, first_name, last_name, phone
+        FROM `user`
+        WHERE id = :id
+        LIMIT 1
+    """), {"id": user_id}).mappings().first()
+
+    if not row:
+        return None
+
+    roles = get_roles_for_user(int(row["id"]))
+
+    return AppUser(
+        id=int(row["id"]),
+        email=row["email"],
+        role=roles,  # keep field name "role" if your AppUser uses it
+        first_name=row["first_name"],
+        last_name=row["last_name"],
+        phone=row["phone"],
+    )
+
+def get_active_role(user):
+    # if already chosen and still valid, use it
+    chosen = session.get("active_role")
+    if chosen and chosen in (user.role or []):
+        return chosen
+
+    # if only one role, auto use it
+    roles = user.role or []
+    if len(roles) == 1:
+        session["active_role"] = roles[0]
+        return roles[0]
+
+    return None  # multiple roles, not chosen yet
+# -----------------------------
+# Login Route
+# -----------------------------
+
+
 @main_bp.route("/login", methods=["GET", "POST"])
 def login():
+    # If already logged in, route based on active role / choose role
     if current_user.is_authenticated:
-        return redirect(url_for("main.book"))
+        # if multiple roles and not chosen -> choose page
+        roles = current_user.role or []
+        active = session.get("active_role")
+        if len(roles) > 1 and active not in roles:
+            return redirect(url_for("main.choose_role"))
+        return redirect(url_for("main.after_login_redirect"))
 
     form = LoginForm()
     if form.validate_on_submit():
         email = form.email.data.strip().lower()
 
         row = db.session.execute(text("""
-            SELECT id, password_hash, email, role, first_name, last_name, phone
-            FROM user
-            WHERE email = :email
+            SELECT u.id, u.password_hash, u.email, u.first_name, u.last_name, u.phone
+            FROM `user` u
+            WHERE u.email = :email
             LIMIT 1
         """), {"email": email}).mappings().first()
 
-        if row and check_password_hash(row["password_hash"], form.password.data):
-            u = AppUser(
-                id=int(row["id"]),
-                email=row["email"],
-                role=row["role"],
-                first_name=row["first_name"],
-                last_name=row["last_name"],
-                phone=row["phone"],
-            )
-            login_user(u)
-            flash("Welcome!", "success")
-            return redirect(url_for("admin.messages") if u.is_admin else url_for("main.book"))
+        if not row or not check_password_hash(row["password_hash"], form.password.data):
+            flash("Invalid email or password.", "danger")
+            return render_template("auth/login.html", title="Login", form=form)
 
-        flash("Invalid email or password.", "danger")
+        roles = get_roles_for_user(int(row["id"]))  # must return list[str] active roles
+        if not roles:
+            flash("No active roles assigned to this account.", "danger")
+            return render_template("auth/login.html", title="Login", form=form)
+
+        # IMPORTANT: clear any previous role selection (user might switch accounts)
+        session.pop("active_role", None)
+
+        u = AppUser(
+            id=int(row["id"]),
+            email=row["email"],
+            role=roles,  # list[str]
+            first_name=row["first_name"],
+            last_name=row["last_name"],
+            phone=row["phone"],
+        )
+
+        login_user(u)
+        flash("Welcome!", "success")
+
+        # ✅ Multi-role routing
+        if len(roles) > 1:
+            return redirect(url_for("main.choose_role"))
+
+        # Only one role -> auto set it
+        session["active_role"] = roles[0]
+        return redirect(url_for("main.after_login_redirect"))
 
     return render_template("auth/login.html", title="Login", form=form)
+
+
+
+@main_bp.get("/choose-role")
+@login_required
+def choose_role():
+    roles = current_user.role or []
+    if not roles:
+        flash("No roles assigned. Contact admin.", "danger")
+        return redirect(url_for("main.logout"))  # or safe page
+
+    if len(roles) == 1:
+        session["active_role"] = roles[0]
+        return redirect(url_for("main.after_login_redirect"))
+
+    return render_template("auth/choose_role.html", roles=roles)
+
+
+@main_bp.post("/choose-role")
+@login_required
+def choose_role_post():
+    role = (request.form.get("role") or "").strip().lower()
+    roles = current_user.role or []
+
+    if role not in roles:
+        flash("Invalid role selection.", "danger")
+        return redirect(url_for("main.choose_role"))
+
+    session["active_role"] = role
+    return redirect(url_for("main.after_login_redirect"))
+
+@main_bp.get("/after-login")
+@login_required
+def after_login_redirect():
+    role = session.get("active_role")
+    roles = current_user.role or []
+
+    # if multiple roles but not chosen yet
+    if len(roles) > 1 and (not role or role not in roles):
+        return redirect(url_for("main.choose_role"))
+
+    # if single role, role may be missing, set it
+    if len(roles) == 1 and (not role or role not in roles):
+        session["active_role"] = roles[0]
+        role = roles[0]
+
+    # Now redirect based on selected role
+    if role == "admin":
+        return redirect(url_for("admin.messages"))  # change to your route
+    if role == "teacher":
+        return "Teacher Dashboard will be here."
+#        return redirect(url_for("teacher.dashboard"))  # change to your route
+    return redirect(url_for("main.book"))  # student default
+
+
 
 
 @main_bp.get("/logout")

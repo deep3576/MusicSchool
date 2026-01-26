@@ -13,17 +13,6 @@ SET time_zone = '+00:00';
 -- ---------- helper: add column if missing ----------
 SET @db := DATABASE();
 
--- role
-SET @exists := (SELECT COUNT(*) FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA=@db AND TABLE_NAME='user' AND COLUMN_NAME='role');
-SET @sql := IF(@exists=0,
-    "ALTER TABLE `user` ADD COLUMN `role` varchar(20) NOT NULL DEFAULT 'student' CHECK (role IN ('student','teacher','admin')) AFTER `password_hash`",
-  "SELECT 'user.role exists'");
-
-  'role' TEXT NOT NULL DEFAULT 'student'
-    CHECK (role IN ('student','teacher','admin'))
-
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- first_name
 SET @exists := (SELECT COUNT(*) FROM information_schema.COLUMNS

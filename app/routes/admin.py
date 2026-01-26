@@ -1637,10 +1637,14 @@ def booking_edit(booking_id):
 @admin_required
 def users():
     rows = db.session.execute(text("""
-        Select u.id, u.email, u.role, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title  from user u
-        left join class_level cl on u.assigned_class_id = cl.id
-        order by u.created_at desc
-        LIMIT 500
+    Select u.id, u.email, ur.role, concat(u.first_name,' ', u.last_name) as full_name, 
+     u.phone, u.created_at,cl.title  from user u
+     left join class_level cl on u.assigned_class_id = cl.id
+     left join (SELECT user_id, GROUP_CONCAT(DISTINCT role ORDER BY role SEPARATOR ', ') AS role FROM user_role
+  WHERE is_active = 1
+  GROUP BY user_id ) ur on ur.user_id=u.id
+     order by u.created_at desc
+     LIMIT 500
     """)).mappings().all()
 
     items = []
@@ -1682,7 +1686,7 @@ def user_edit(user_id: int):
 
     user = db.session.execute(text("""
         SELECT
-          id, email, role,
+          id, email,
           first_name, last_name, phone,
           address_1, address_2, city, province, postal_code, country,
           assigned_class_id
@@ -1691,6 +1695,12 @@ def user_edit(user_id: int):
         LIMIT 1
     """), {"id": user_id}).mappings().first()
 
+    rows=[]
+    rows = db.session.execute(text("""
+    Select role from user_role WHERE user_id=:id and is_active=1 LIMIT 3
+    """), {"id": user_id}).mappings().all()
+    user_roles = [r["role"] for r in rows]
+
     if not user:
         flash("User not found.", "danger")
         return redirect(url_for("admin.users"))
@@ -1698,7 +1708,7 @@ def user_edit(user_id: int):
     if request.method == "POST":
         # Read form
         email = (request.form.get("email") or "").strip().lower()
-        role = (request.form.get("role") or "student").strip().lower()
+        roles = request.form.getlist("roles")   # returns list like ['student','teacher']
         first_name = (request.form.get("first_name") or "").strip()
         last_name = (request.form.get("last_name") or "").strip()
         phone = (request.form.get("phone") or "").strip() or None
@@ -1718,9 +1728,6 @@ def user_edit(user_id: int):
             flash("Email is required.", "danger")
             return redirect(url_for("admin.user_edit", user_id=user_id))
 
-        if role not in ("admin", "student","teacher"):
-            role = "student"
-
         # Email uniqueness check if changed
         exists = db.session.execute(text("""
             SELECT id FROM `user`
@@ -1736,7 +1743,6 @@ def user_edit(user_id: int):
             db.session.execute(text("""
                 UPDATE `user`
                 SET email = :email,
-                    role = :role,
                     first_name = :first_name,
                     last_name = :last_name,
                     phone = :phone,
@@ -1751,7 +1757,6 @@ def user_edit(user_id: int):
                 LIMIT 1
             """), {
                 "email": email,
-                "role": role,
                 "first_name": first_name,
                 "last_name": last_name,
                 "phone": phone,
@@ -1764,6 +1769,54 @@ def user_edit(user_id: int):
                 "assigned_class_id": assigned_class_id,
                 "id": user_id,
             })
+
+            # roles coming from form checkbox
+            roles = [r.strip().lower() for r in request.form.getlist("roles")]
+            allowed = {"admin", "student", "teacher"}
+            roles = [r for r in roles if r in allowed]
+            roles = list(dict.fromkeys(roles))  # dedupe
+
+            if not roles:
+                flash("Select at least one role.", "danger")
+                return redirect(url_for("admin.user_edit", user_id=user_id))
+
+            # 1) Load existing roles for this user
+            existing_rows = db.session.execute(text("""
+                SELECT role, is_active
+                FROM user_role
+                WHERE user_id = :id
+                ORDER BY role
+            """), {"id": user_id}).mappings().all()
+
+            # Build lookup: {"admin": 1, "student": 0, ...}
+            existing = {row["role"]: int(row["is_active"]) for row in existing_rows}
+
+            # 2) Enable selected roles (insert if missing, otherwise activate)
+            for r in roles:
+                if r in existing:
+                    db.session.execute(text("""
+                        UPDATE user_role
+                        SET is_active = 1
+                        WHERE user_id = :id AND role = :role
+                        LIMIT 1
+                    """), {"id": user_id, "role": r})
+                else:
+                    db.session.execute(text("""
+                        INSERT INTO user_role (user_id, role, is_active, assigned_at)
+                        VALUES (:id, :role, 1, NOW())
+                    """), {"id": user_id, "role": r})
+
+            # 3) Disable roles that were unchecked
+            # (only disable those that exist but are not selected)
+            for r in existing.keys():
+                if r not in roles:
+                    db.session.execute(text("""
+                        UPDATE user_role
+                        SET is_active = 0
+                        WHERE user_id = :id AND role = :role
+                        LIMIT 1
+                    """), {"id": user_id, "role": r})
+
             db.session.commit()
             flash("User updated successfully.", "success")
             return redirect(url_for("admin.users"))
@@ -1778,7 +1831,9 @@ def user_edit(user_id: int):
         **user,
         "full_name": (f"{user['first_name'] or ''} {user['last_name'] or ''}".strip() or "—")
     })
-    return render_template("admin/user_edit.html", title="Edit User", u=item, classes=classes)
+    return render_template("admin/user_edit.html", title="Edit User", u=item, classes=classes , user_roles=user_roles
+
+                           )
 
 
 @admin_bp.post("/users/create")

@@ -9,12 +9,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="Add students.html">
-      <change afterPath="$PROJECT_DIR$/app/routes/teacher.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/db/releases/multiple_user_roles.sql" afterDir="false" />
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="starting of new log in for teachers.">
+      <change afterPath="$PROJECT_DIR$/app/static/img/tanpura_girl2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/templates/auth/choose_role.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/student.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/auth_user.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/auth_user.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/student.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/student.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/static/css/student.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/student.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/static/css/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/css/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/user_edit.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/user_edit.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/releases/signup.sql" beforeDir="false" afterPath="$PROJECT_DIR$/db/releases/signup.sql" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,11 +74,15 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "master",
+    "last_opened_file_path": "/Users/inderdeepsingh/PycharmProjects/MusicSchool/app/static/img",
     "run.code.analysis.last.selected.profile": "pProject Default",
     "settings.editor.selected.configurable": "preferences.lookFeel"
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/static/img" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
@@ -192,7 +203,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769314679953</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="starting of new log in for teachers.">
+      <option name="closed" value="true" />
+      <created>1769367862830</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1769367862830</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -204,6 +223,7 @@
     <MESSAGE value="updations on booking system" />
     <MESSAGE value="Add functionality to Change timeslot after booking." />
     <MESSAGE value="Add students.html" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add students.html" />
+    <MESSAGE value="starting of new log in for teachers." />
+    <option name="LAST_COMMIT_MESSAGE" value="starting of new log in for teachers." />
   </component>
 </project>

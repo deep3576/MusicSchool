@@ -1,12 +1,16 @@
 # app/__init__.py
 import os
 import configparser
-from flask import Flask
+
+from flask import Flask, session
+from flask_login import current_user
 from flask_apscheduler import APScheduler
+
 from .extensions import db, login_manager
 from .jobs import scheduling  # make sure jobs.py exists
 
 scheduler = APScheduler()
+
 
 class Config:
     SCHEDULER_API_ENABLED = True
@@ -63,6 +67,22 @@ def create_app() -> Flask:
     from .auth_user import register_user_loader
     register_user_loader(login_manager)
 
+    # ✅ Inject active_role into all templates (used to show clean admin/student UI)
+    @app.context_processor
+    def inject_active_role():
+        roles = getattr(current_user, "role", None) or []
+        chosen = session.get("active_role")
+
+        if chosen and chosen in roles:
+            ar = chosen
+        elif len(roles) == 1:
+            session["active_role"] = roles[0]
+            ar = roles[0]
+        else:
+            ar = None  # multiple roles and not chosen yet
+
+        return {"active_role": ar}
+
     # Blueprints
     from .routes.student import main_bp
     from .routes.admin import admin_bp
@@ -82,7 +102,7 @@ def create_app() -> Flask:
         id="daily_scheduling_midnight",
         func=run_midnight_job,
         trigger="cron",
-        hour=00,                # midnight
+        hour=0,               # midnight
         minute=33,
         replace_existing=True,
         timezone="America/Toronto",

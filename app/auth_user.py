@@ -4,12 +4,11 @@ from flask_login import UserMixin
 from sqlalchemy import text
 from .extensions import db
 
-
 @dataclass
 class AppUser(UserMixin):
     id: int
     email: str
-    role: str
+    role: list[str]   # active roles list
     first_name: str | None = None
     last_name: str | None = None
     phone: str | None = None
@@ -23,16 +22,21 @@ class AppUser(UserMixin):
 
     @property
     def is_admin(self) -> bool:
-        return (self.role or "").lower() == "admin"
+        return "admin" in (self.role or [])
+
+    @property
+    def is_teacher(self) -> bool:
+        return "teacher" in (self.role or [])
 
     @property
     def is_student(self) -> bool:
-        return (self.role or "").lower() == "student"
+        return "student" in (self.role or [])
 
 
 def get_user_by_id(user_id: int) -> AppUser | None:
+    # ✅ user table WITHOUT role
     row = db.session.execute(text("""
-        SELECT id, email, role, first_name, last_name, phone
+        SELECT id, email, first_name, last_name, phone
         FROM `user`
         WHERE id = :id
         LIMIT 1
@@ -41,10 +45,17 @@ def get_user_by_id(user_id: int) -> AppUser | None:
     if not row:
         return None
 
+    # ✅ roles from user_role table (only active)
+    roles = db.session.execute(text("""
+        SELECT role
+        FROM user_role
+        WHERE user_id = :id AND is_active = 1
+    """), {"id": user_id}).scalars().all()   # returns list[str]
+
     return AppUser(
         id=int(row["id"]),
         email=row["email"],
-        role=row["role"],
+        role=list(roles),   # ✅ list
         first_name=row["first_name"],
         last_name=row["last_name"],
         phone=row["phone"],
