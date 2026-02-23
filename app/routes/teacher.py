@@ -47,7 +47,7 @@ def todaysClasses():
           b.created_at,
           b.availability_id,
           b.teacher_id,
-          t.name AS teacher_name,
+          concat(t.first_name,t.last_name) AS teacher_name,
           b.user_id,
           b.student_name,
           b.student_email,
@@ -94,6 +94,234 @@ def todaysClasses():
     return render_template("teacher/todaysClasses.html", title="Today's Classes", todays_classes=bookings_list,now=datetime.now() )
 
 
+
+@teacher_bp.get("/students")
+@login_required
+def students():
+    rows = db.session.execute(text("""
+        Select distinct u.id, u.email, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title  from user u
+        left join class_level cl on u.assigned_class_id = cl.id
+        inner join (Select * from user_role where is_active=1 and `role`='student' ) ur 
+        on ur.user_id=u.id 
+        where u.id=:id
+        order by u.created_at desc
+        LIMIT 500
+    """),{'id':current_user.id}).mappings().all()
+
+    items = []
+    for r in rows:
+        #full_name = ((r["first_name"] or "").strip() + " " + (r["last_name"] or "").strip()).strip() or r["email"]
+        items.append(_ns({
+            "id": r["id"],
+            "email": r["email"],
+            "full_name": r["full_name"],
+            "phone": r["phone"],
+            "created_at": r["created_at"],
+            "assigned_class_id": r["title"]
+        }))
+
+    return render_template("teacher/students.html", title="Students", items=items)
+
+
+@teacher_bp.route("/studentProfile/<int:user_id>/edit", methods=["GET", "POST"])
+@login_required
+def studentProfile(user_id: int):
+    # classes for dropdown
+    class_rows = db.session.execute(text("""
+        SELECT id, code, title
+        FROM class_level
+        ORDER BY id ASC
+    """)).mappings().all()
+
+    classes = [_ns({
+        "id": r["id"],
+        "label": f"{r['code']} · {r['title']}"
+    }) for r in class_rows]
+
+    user = db.session.execute(text("""
+        SELECT
+          id, email,
+          first_name, last_name, phone,
+          address_1, address_2, city, province, postal_code, country,
+          assigned_class_id
+        FROM `user`
+        WHERE id = :id
+        LIMIT 1
+    """), {"id": user_id}).mappings().first()
+
+    rows=[]
+    rows = db.session.execute(text("""
+    Select role from user_role WHERE user_id=:id and is_active=1 LIMIT 3
+    """), {"id": user_id}).mappings().all()
+    user_roles = [r["role"] for r in rows]
+
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("teacher.students"))
+
+    if request.method == "POST":
+        # Read form
+        email = (request.form.get("email") or "").strip().lower()
+        roles = request.form.getlist("roles")   # returns list like ['student','teacher']
+        first_name = (request.form.get("first_name") or "").strip()
+        last_name = (request.form.get("last_name") or "").strip()
+        phone = (request.form.get("phone") or "").strip() or None
+
+        address_1 = (request.form.get("address_1") or "").strip() or None
+        address_2 = (request.form.get("address_2") or "").strip() or None
+        city = (request.form.get("city") or "").strip() or None
+        province = (request.form.get("province") or "").strip() or None
+        postal_code = (request.form.get("postal_code") or "").strip() or None
+        country = (request.form.get("country") or "").strip() or None
+
+        assigned_class_id_raw = (request.form.get("assigned_class_id") or "").strip()
+        assigned_class_id = int(assigned_class_id_raw) if assigned_class_id_raw.isdigit() else None
+
+        # Basic validations
+        if not email:
+            flash("Email is required.", "danger")
+            return redirect(url_for("teacher.studentProfile", user_id=user_id))
+
+        # Email uniqueness check if changed
+        exists = db.session.execute(text("""
+            SELECT id FROM `user`
+            WHERE email = :email AND id <> :id
+            LIMIT 1
+        """), {"email": email, "id": user_id}).first()
+
+        if exists:
+            flash("That email is already used by another user.", "danger")
+            return redirect(url_for("teacher.studentProfile", user_id=user_id))
+
+        #check entry of updated user in teacher table
+        check1=db.session.execute(text("""
+            Select * from 
+            teacher where id =:id and email=:email
+                        """), {
+                "email": email,
+                "id": user_id,
+            }).first()
+        if check1:
+            db.session.execute(text("""
+                        Delete  from 
+                        teacher where id =:id and email=:email
+                                    """), {
+                "email": email,
+                "id": user_id,
+            })
+            db.session.commit()
+
+
+
+
+        if 'teacher' in roles:
+            db.session.execute(text("""
+            INSERT
+            INTO
+            teacher(id, first_name,last_name, email, is_active)
+            VALUES(:id,:first_name , :last_name, :email, 0)
+                        """), {
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+                "id": user_id,
+            })
+
+        try:
+            db.session.execute(text("""
+                UPDATE `user`
+                SET email = :email,
+                    first_name = :first_name,
+                    last_name = :last_name,
+                    phone = :phone,
+                    address_1 = :address_1,
+                    address_2 = :address_2,
+                    city = :city,
+                    province = :province,
+                    postal_code = :postal_code,
+                    country = :country,
+                    assigned_class_id = :assigned_class_id
+                WHERE id = :id
+                LIMIT 1
+            """), {
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+                "phone": phone,
+                "address_1": address_1,
+                "address_2": address_2,
+                "city": city,
+                "province": province,
+                "postal_code": postal_code,
+                "country": country,
+                "assigned_class_id": assigned_class_id,
+                "id": user_id,
+            })
+
+            # roles coming from form checkbox
+            roles = [r.strip().lower() for r in request.form.getlist("roles")]
+            allowed = {"admin", "student", "teacher"}
+            roles = [r for r in roles if r in allowed]
+            roles = list(dict.fromkeys(roles))  # dedupe
+
+            if not roles:
+                flash("Select at least one role.", "danger")
+                return redirect(url_for("teacher.studentProfile", user_id=user_id))
+
+            # 1) Load existing roles for this user
+            existing_rows = db.session.execute(text("""
+                SELECT role, is_active
+                FROM user_role
+                WHERE user_id = :id
+                ORDER BY role
+            """), {"id": user_id}).mappings().all()
+
+            # Build lookup: {"admin": 1, "student": 0, ...}
+            existing = {row["role"]: int(row["is_active"]) for row in existing_rows}
+
+            # 2) Enable selected roles (insert if missing, otherwise activate)
+            for r in roles:
+                if r in existing:
+                    db.session.execute(text("""
+                        UPDATE user_role
+                        SET is_active = 1
+                        WHERE user_id = :id AND role = :role
+                        LIMIT 1
+                    """), {"id": user_id, "role": r})
+                else:
+                    db.session.execute(text("""
+                        INSERT INTO user_role (user_id, role, is_active, assigned_at)
+                        VALUES (:id, :role, 1, NOW())
+                    """), {"id": user_id, "role": r})
+
+            # 3) Disable roles that were unchecked
+            # (only disable those that exist but are not selected)
+            for r in existing.keys():
+                if r not in roles:
+                    db.session.execute(text("""
+                        UPDATE user_role
+                        SET is_active = 0
+                        WHERE user_id = :id AND role = :role
+                        LIMIT 1
+                    """), {"id": user_id, "role": r})
+
+            db.session.commit()
+            flash("User updated successfully.", "success")
+            return redirect(url_for("teacher.students"))
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("[teacher.studentProfile] update failed")
+            flash("Could not update user. Check logs.", "danger")
+            return redirect(url_for("teacher.studentProfile", user_id=user_id))
+
+    # GET render
+    item = _ns({
+        **user,
+        "full_name": (f"{user['first_name'] or ''} {user['last_name'] or ''}".strip() or "—")
+    })
+    return render_template("teacher/studentProfile.html", title="Student Profile", u=item, classes=classes , user_roles=user_roles
+
+                           )
 
 
 @teacher_bp.post("/todaysClasses/<int:booking_id>/absent")

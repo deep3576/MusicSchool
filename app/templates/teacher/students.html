@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page">
+    <div class="page-head"
+         style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+        <div>
+            <h1 style="margin:0;">All Active Students</h1>
+            <p class="muted" style="margin:6px 0 0;">Manage Students, check performance , and manage availability
+                slots.</p>
+        </div>
+
+    </div>
+
+    <div class="card teacher-nav">
+        <a href="{{ url_for('teacher.todaysClasses') }}" >Today's Classes</a>
+        <a href="{{ url_for('teacher.students') }}" class="active">Students Assigned</a>
+    </div>
+
+   <div class="card">
+    {% if not items %}
+      <p class="muted" style="margin:0;">No Students found.</p>
+    {% else %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+
+              <th>Assigned Class</th>
+              <th>Phone</th>
+              <th style="width:120px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in items %}
+              <tr>
+                <td style="font-weight:900;">{{ u.full_name }}</td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.assigned_class_id }}</td>
+                <td>{{ u.phone }}</td>
+                <td>
+                  <a class="btn small" href="{{ url_for('teacher.studentProfile', user_id=u.id) }}">Open Profile</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<style>
+  .admin-head{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .admin-search{ display:flex; gap:8px; flex-wrap:wrap; }
+  .table-wrap{ overflow:auto; }
+  .table{ width:100%; border-collapse: collapse; }
+  .table th, .table td{ padding:10px 12px; border-bottom:1px solid var(--border,#e6e6ee); text-align:left; }
+  .pill{ padding:3px 10px; border-radius:999px; border:1px solid var(--border,#e6e6ee); font-weight:950; font-size:12px; }
+  .btn.small{ padding:6px 10px; font-size:13px; }
+  @media (max-width: 520px){
+    .admin-search .input{ width:100%; }
+  }
+</style>
+{% endblock %}

@@ -7,6 +7,7 @@
 
     <div class="card teacher-nav">
         <a href="{{ url_for('teacher.todaysClasses') }}" class="active">Today's Classes</a>
+        <a href="{{ url_for('teacher.students') }}" >Students Assigned</a>
     </div>
 
     {% if not todays_classes %}
