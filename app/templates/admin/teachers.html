@@ -72,11 +72,11 @@
                             endif %}
                         </form>
 
-                    <tr data-search="{{ (t.name ~ ' ' ~ (t.email or ''))|lower }}">
+                    <tr data-search="{{ (t.first_name ~ ' ' ~ (t.email or ''))|lower }}">
                         <td>
-                            <div style="font-weight:950;">{{ t.name }}</div>
-                            {% if t.bio %}
-                            <div class="muted" style="font-size:12px; margin-top:4px;">{{ t.bio }}</div>
+                            <div style="font-weight:950;">{{ t.first_name }} {{ t.last_name }}</div>
+                            {% if t.first_name %}
+                            <div class="muted" style="font-size:12px; margin-top:4px;">{{ t.first_name }} {{ t.last_name }}</div>
                             {% endif %}
                         </td>
 
@@ -141,8 +141,15 @@
 
                                         <div style="display:grid; gap:10px; margin-top:12px;">
                                             <div>
-                                                <label class="muted">Name *</label>
-                                                <input class="input" type="text" name="name" value="{{ t.name }}"
+                                                <label class="muted">First Name *</label>
+                                                <input class="input" type="text" name="first_name" value="{{ t.first_name }}"
+                                                       required>
+                                            </div>
+
+                                                                                    <div style="display:grid; gap:10px; margin-top:12px;">
+                                            <div>
+                                                <label class="muted">Last Name *</label>
+                                                <input class="input" type="text" name="last_name" value="{{ t.last_name }}"
                                                        required>
                                             </div>
 

@@ -66,11 +66,13 @@ CREATE TABLE IF NOT EXISTS `venue` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
 -- 5) Teachers
 CREATE TABLE IF NOT EXISTS `teacher` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(120) NOT NULL,
-  `email` VARCHAR(255) NULL,
+  `id` INT NOT NULL,
+  `first_name` VARCHAR(80) NOT NULL,
+  `last_name` VARCHAR(80) NOT NULL
+  `email` VARCHAR(255) NOT NULL,
   `bio` TEXT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `default_venue_id` INT NULL,

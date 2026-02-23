@@ -39,6 +39,7 @@ def _ensure_teacher_role():
 @teacher_bp.get("/todaysClasses")
 @login_required
 def todaysClasses():
+    print(current_user.id)
     bookings_rows = db.session.execute(text("""
         SELECT
           b.id,
@@ -63,12 +64,10 @@ def todaysClasses():
         JOIN teacher_availability ta ON ta.id = b.availability_id
         LEFT JOIN class_level cl ON cl.id = b.class_level_id
         LEFT JOIN venue v ON v.id = b.venue_id
-        where b.teacher_id =12
+        WHERE b.teacher_id = :teacher_id
         ORDER BY b.created_at DESC
         LIMIT 500
-    """)
-                                       #,{":id": 12}
-                                       ).mappings().all()
+    """),{"teacher_id": current_user.id}).mappings().all()
 
     bookings_list = []
     for r in bookings_rows:

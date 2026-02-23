@@ -285,7 +285,7 @@ def logout():
 def teachers():
     teachers_rows = db.session.execute(text("""
         SELECT
-          t.id, t.name, t.email, t.bio, t.is_active, t.class_duration_min,
+          t.id, t.first_name,t.last_name, t.email, t.bio, t.is_active, t.class_duration_min,
           t.default_venue_id,t.shift_start_time,t.shift_end_time,t.break_start_time,t.break_end_time,
           v.name AS default_venue_name,
           COALESCE(GROUP_CONCAT(cl.title ORDER BY cl.title SEPARATOR ', '), '') AS class_titles
@@ -296,9 +296,9 @@ def teachers():
         LEFT JOIN class_level cl
           ON cl.id = tcl.class_level_id AND cl.is_active = 1
         GROUP BY
-          t.id, t.name, t.email, t.bio, t.is_active, t.class_duration_min,
+          t.id, t.first_name,t.last_name, t.email, t.bio, t.is_active, t.class_duration_min,
           t.default_venue_id, v.name
-        ORDER BY t.name ASC
+        ORDER BY t.first_name,t.last_name ASC
     """)).mappings().all()
 
     assigned_classes = db.session.execute(text("""
@@ -338,7 +338,8 @@ def teachers():
     for r in teachers_rows:
         teachers.append(_ns({
             "id": r["id"],
-            "name": r["name"],
+            "first_name": r["first_name"],
+            "last_name":r["last_name"],
             "email": r["email"],
             "bio": r["bio"],
             "is_active": bool(r["is_active"]),
@@ -523,8 +524,11 @@ def teacher_delete(teacher_id):
 @admin_bp.post("/teachers/<int:teacher_id>/edit")
 @admin_required
 def teacher_edit(teacher_id):
-    name = (request.form.get("name") or "").strip()
-    if not name:
+    first_name = (request.form.get("first_name") or "").strip()
+    last_name = (request.form.get("last_name") or "").strip()
+    print(first_name + ' ' + last_name)
+
+    if not first_name or not last_name:
         flash("Teacher name required.", "danger")
         return redirect(url_for("admin.teachers"))
 
@@ -546,7 +550,8 @@ def teacher_edit(teacher_id):
 
     db.session.execute(text("""
         UPDATE teacher
-        SET name = :name,
+        SET first_name = :first_name,
+            last_name = :last_name,
             email = :email,
             bio = :bio,
             class_duration_min = :duration,
@@ -559,7 +564,8 @@ def teacher_edit(teacher_id):
         WHERE id = :id
     """), {
         "id": teacher_id,
-        "name": name,
+        "first_name": first_name,
+        "last_name": last_name,
         "email": email,
         "bio": bio,
         "duration": duration,
@@ -1316,7 +1322,7 @@ def bookings():
           b.created_at,
           b.availability_id,
           b.teacher_id,
-          t.name AS teacher_name,
+          concat(t.first_name,t.last_name) AS teacher_name,
           b.user_id,
           b.student_name,
           b.student_email,
@@ -1736,6 +1742,40 @@ def user_edit(user_id: int):
         if exists:
             flash("That email is already used by another user.", "danger")
             return redirect(url_for("admin.user_edit", user_id=user_id))
+
+        #check entry of updated user in teacher table
+        check1=db.session.execute(text("""
+            Select * from 
+            teacher where id =:id and email=:email
+                        """), {
+                "email": email,
+                "id": user_id,
+            }).first()
+        if check1:
+            db.session.execute(text("""
+                        Delete  from 
+                        teacher where id =:id and email=:email
+                                    """), {
+                "email": email,
+                "id": user_id,
+            })
+            db.session.commit()
+
+
+
+
+        if 'teacher' in roles:
+            db.session.execute(text("""
+            INSERT
+            INTO
+            teacher(id, first_name,last_name, email, is_active)
+            VALUES(:id,:first_name , :last_name, :email, 0)
+                        """), {
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+                "id": user_id,
+            })
 
         try:
             db.session.execute(text("""
