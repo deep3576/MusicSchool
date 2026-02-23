@@ -1,0 +1,402 @@
+/* =========================================
+   teacher CSS (Robust)
+   - Works with Teachers as TABLE rows
+   - Responsive
+   - Modal popup for Assign Classes
+   ========================================= */
+
+/* Global */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* -------------------------
+   teacher base theme
+-------------------------- */
+body.teacher{
+  background:
+    radial-gradient(900px 520px at 12% 0%, rgba(24,169,87,.12), transparent 55%),
+    radial-gradient(900px 520px at 88% 0%, rgba(24,169,87,.10), transparent 55%),
+    linear-gradient(180deg, #fbfffc, #f6fbf7);
+  color: #0c1a12;
+}
+
+/* If your base.css doesn't already set a nice page width, this helps */
+body.teacher .page{
+  width: min(1200px, 94vw);
+  margin: 0 auto;
+  padding: 18px 0 40px;
+}
+
+/* Header tint */
+body.teacher .topbar{
+  background: rgba(255,255,255,.72);
+  border-bottom: 1px solid rgba(20, 70, 40, .12);
+}
+
+/* Cards */
+body.teacher .card{
+  border: 1px solid rgba(20, 70, 40, .12);
+  background: rgba(255,255,255,.92);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(10, 40, 22, .10);
+}
+
+/* Nav hover */
+body.teacher .nav a:hover{
+  background: rgba(24,169,87,.10);
+  border-color: rgba(24,169,87,.18);
+}
+
+/* teacher nav pills */
+body.teacher .teacher-nav{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  padding:12px;
+}
+body.teacher .teacher-nav a{
+  text-decoration:none;
+  padding:10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(20,70,40,.12);
+  color: rgba(12,26,18,.88);
+  background: rgba(255,255,255,.78);
+}
+body.teacher .teacher-nav a:hover{
+  background: rgba(24,169,87,.10);
+  border-color: rgba(24,169,87,.18);
+}
+body.teacher .teacher-nav a.active{
+  background: linear-gradient(135deg, rgba(24,169,87,.14), rgba(24,169,87,.08));
+  border-color: rgba(24,169,87,.22);
+  font-weight: 900;
+}
+
+/* -------------------------
+   Buttons
+-------------------------- */
+body.teacher .btn{
+  border: 1px solid rgba(24,169,87,.26);
+  background: linear-gradient(135deg, #18a957, #0f8f48);
+  box-shadow: 0 14px 26px rgba(24,169,87,.18);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  white-space: nowrap;
+  transition: transform .12s ease, filter .12s ease;
+}
+body.teacher .btn:hover{ filter: brightness(1.03); }
+body.teacher .btn:active{ transform: translateY(1px); }
+
+body.teacher .btn.secondary{
+  background: rgba(255,255,255,.78);
+  color: rgba(12,26,18,.88);
+  border: 1px solid rgba(20,70,40,.14);
+  box-shadow: 0 10px 18px rgba(10, 40, 22, .06);
+}
+
+body.teacher .btn.cancel{
+  background: #e23b3b;
+  border-color: rgba(226,59,59,.35);
+  box-shadow: 0 14px 26px rgba(226,59,59,.15);
+  color: #fff;
+}
+
+/* -------------------------
+   Inputs
+-------------------------- */
+body.teacher .input,
+body.teacher input[type="text"],
+body.teacher input[type="email"],
+body.teacher input[type="password"],
+body.teacher input[type="number"],
+body.teacher input[type="time"],
+body.teacher select,
+body.teacher textarea{
+  border: 1px solid rgba(20,70,40,.14);
+  background: rgba(255,255,245,.92);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: rgba(12,26,18,.92);
+  outline: none;
+  width: 100%;
+}
+/* Ensure time picker indicator isn't hidden */
+body.teacher input[type="time"]::-webkit-calendar-picker-indicator{
+  opacity: 1;
+  display: block !important;
+  cursor: pointer;
+}
+
+
+
+body.teacher .input:focus,
+body.teacher input:focus,
+body.teacher select:focus,
+body.teacher textarea:focus{
+  border-color: rgba(24,169,87,.45);
+  box-shadow: 0 0 0 4px rgba(24,169,87,.12);
+}
+
+/* -------------------------
+   Teachers layout
+   (Fixes the distortion you see)
+-------------------------- */
+body.teacher .teachers-layout{
+  display: grid;              /* NOT inline */
+  grid-template-columns: 1fr; /* stack vertically */
+  gap: 14px;
+  margin-top: 14px;
+  width: 100%;
+  min-width: 0;               /* important: allows children to shrink */
+}
+
+/* Ensure cards can shrink within the grid */
+body.teacher .teachers-search-card,
+body.teacher .teachers-table-card{
+  min-width: 0;
+}
+/* Table card should be full width and not squeeze */
+body.teacher .teachers-table-card{
+  padding: 0; /* table handles padding */
+}
+
+/* -------------------------
+   Table wrapper
+-------------------------- */
+body.teacher .table-wrap{
+  overflow-x: auto;           /* horizontal scroll */
+  overflow-y: hidden;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Make scrollbars less ugly (optional) */
+body.teacher .table-wrap::-webkit-scrollbar{ height: 10px; width: 10px; }
+body.teacher .table-wrap::-webkit-scrollbar-thumb{
+  background: rgba(20,70,40,.18);
+  border-radius: 999px;
+}
+body.teacher .table-wrap::-webkit-scrollbar-track{
+  background: rgba(20,70,40,.06);
+  border-radius: 999px;
+}
+
+/* -------------------------
+   Teachers table
+-------------------------- */
+body.teacher .teachers-table{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1100px; /* ensures columns don’t crush; scroll appears if needed */
+}
+
+body.teacher .teachers-table thead th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(10px);
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(20,70,40,.12);
+  font-weight: 950;
+  text-align: left;
+  color: rgba(12,26,18,.82);
+  white-space: nowrap;
+}
+
+body.teacher .teachers-table td{
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(20,70,40,.10);
+  vertical-align: middle;
+  text-align:left;
+}
+
+body.teacher .teachers-table tr:hover td{
+  background: rgba(24,169,87,.06);
+}
+
+/* Compact controls inside table */
+body.teacher .t-mini{
+  width: 92px;
+  padding: 8px 10px !important;
+}
+body.teacher .t-venue{
+  min-width: 210px;
+  padding: 8px 10px !important;
+}
+
+/* Classes cell ellipsis */
+body.teacher .t-classes{
+  max-width: 380px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Buttons in one cell */
+body.teacher .cell-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap: wrap;
+}
+
+/* Small button variant for table */
+body.teacher .t-btn{
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+/* Status pill */
+body.teacher .pill{
+  display:inline-flex;
+  align-items:center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  border: 1px solid rgba(20,70,40,.14);
+  background: rgba(255,255,255,.78);
+}
+body.teacher .pill.ok{
+  border-color: rgba(24,169,87,.25);
+  background: rgba(24,169,87,.12);
+}
+body.teacher .pill.off{
+  border-color: rgba(90,90,90,.22);
+  background: rgba(90,90,90,.10);
+}
+
+/* -------------------------
+   Assign Classes popup (Modal)
+   IMPORTANT: This replaces your old fixed-bottom popup style
+-------------------------- */
+body.teacher .form-popup{
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  place-items: center; /* JS sets display:grid when opening */
+}
+
+body.teacher .form-backdrop{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,.35);
+}
+
+body.teacher .form-container{
+  position: relative;
+  width: min(92vw, 560px);
+  max-height: min(84vh, 760px);
+  overflow: hidden;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(20,70,40,.14);
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 24px 80px rgba(0,0,0,.20);
+}
+
+/* Scroll area inside popup */
+body.teacher .form-container .class-list{
+  max-height: 360px;
+  overflow: auto;
+  margin-top: 10px;
+  padding-right: 6px;
+}
+
+/* Each class line */
+body.teacher .class-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(20,70,40,.10);
+}
+body.teacher .class-item:last-child{ border-bottom: none; }
+
+/* Popup actions row */
+body.teacher .popup-actions{
+  display:flex;
+  gap:10px;
+  margin-top: 12px;
+}
+
+/* -------------------------
+   teacher bell (if you use it)
+-------------------------- */
+body.teacher .teacher-bell{
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 70, 40, .14);
+  background: rgba(255,255,255,.78);
+  text-decoration: none;
+  transition: transform .14s ease, background .14s ease;
+}
+body.teacher .teacher-bell:hover{
+  background: rgba(24,169,87,.10);
+  transform: translateY(-1px);
+}
+body.teacher .bell-badge{
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #18a957;
+  color: #fff;
+  font-weight: 900;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+}
+
+/* -------------------------
+   Responsive
+-------------------------- */
+@media (max-width: 900px){
+  body.teacher .topbar-inner{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  body.teacher .nav{ justify-content: center; }
+  body.teacher .nav-right{ justify-content: center; }
+
+  /* tables always scroll on small screens */
+  body.teacher .teachers-table{ min-width: 1100px; }
+}
+
+@media (max-width: 600px){
+  body.teacher .btn,
+  body.teacher .btn.secondary{
+    width: 100%;
+  }
+}
+
+
+/* Past booking highlight */
+body.teacher .booking-card.booking-past{
+  border-color: rgba(226, 59, 59, .35) !important;
+  background: rgba(255, 235, 238, .75) !important; /* soft pink */
+}
+
+body.teacher .booking-card.booking-past .pill.ok{
+  background: rgba(226, 59, 59, .12);
+  border-color: rgba(226, 59, 59, .25);
+}

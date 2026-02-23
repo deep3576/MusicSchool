@@ -47,7 +47,7 @@
             {% elif active_role == 'admin' %}
             <a href="{{ url_for('admin.messages') }}">Admin</a>
             {% elif active_role == 'teacher' %}
-            <a href="{{ url_for('teacher.dashboard') }}">Teacher</a>
+            <a href="{{ url_for('teacher.todaysClasses') }}">Teacher</a>
             {% endif %}
             {% endif %}
 

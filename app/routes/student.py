@@ -310,11 +310,11 @@ def book_submit():
             INSERT INTO booking
               (teacher_id, availability_id, user_id,
                student_name, student_email, student_phone,
-               class_level_id, venue_id, status, created_at)
+               class_level_id, venue_id, status, created_at,last_update_timestamp,last_update_by)
             VALUES
               (:teacher_id, :availability_id, :user_id,
                :student_name, :student_email, :student_phone,
-               :class_level_id, :venue_id, 'BOOKED', NOW())
+               :class_level_id, :venue_id, 'BOOKED', NOW(),NOW(),'System')
         """), {
             "teacher_id": slot["teacher_id"],
             "availability_id": slot["id"],
@@ -620,7 +620,10 @@ def login():
     if current_user.is_authenticated:
         # if multiple roles and not chosen -> choose page
         roles = current_user.role or []
+        print(current_user.role)
+
         active = session.get("active_role")
+        print(active)
         if len(roles) > 1 and active not in roles:
             return redirect(url_for("student.choose_role"))
         return redirect(url_for("student.after_login_redirect"))
@@ -719,7 +722,7 @@ def after_login_redirect():
     if role == "admin":
         return redirect(url_for("admin.messages"))  # change to your route
     if role == "teacher":
-        return redirect(url_for("teacher.dashboard"))
+        return redirect(url_for("teacher.todaysClasses"))
     return redirect(url_for("student.book"))  # student default
 
 

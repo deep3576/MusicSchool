@@ -1915,9 +1915,10 @@ def inject_admin_message_badge():
 @admin_required
 def students():
     rows = db.session.execute(text("""
-        Select u.id, u.email, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title  from user u
+        Select distinct u.id, u.email, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title  from user u
         left join class_level cl on u.assigned_class_id = cl.id
-        where u.role='student'
+        inner join (Select * from user_role where is_active=1 and `role`='student' ) ur 
+        on ur.user_id=u.id 
         order by u.created_at desc
         LIMIT 500
     """)).mappings().all()

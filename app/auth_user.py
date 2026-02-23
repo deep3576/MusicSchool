@@ -52,6 +52,7 @@ def get_user_by_id(user_id: int) -> AppUser | None:
         WHERE user_id = :id AND is_active = 1
     """), {"id": user_id}).scalars().all()   # returns list[str]
 
+    print(f"Roles Sent  by Login Manager:{roles}")
     return AppUser(
         id=int(row["id"]),
         email=row["email"],

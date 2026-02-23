@@ -1,5 +1,3 @@
-# app/email.py
-import os
 import configparser
 import smtplib
 from email.message import EmailMessage
