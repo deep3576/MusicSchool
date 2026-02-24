@@ -145,7 +145,7 @@ def students():
         WHERE u.id <> :teacher_id
         ORDER BY u.created_at DESC
         LIMIT 500
-    """), {'teacher_id': current_user.id}).mappings().all()
+    """), {'id': current_user.id}).mappings().all()
 
     items = []
     for r in rows:
