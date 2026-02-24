@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="page">
-    <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
+    <div class="header-row">
         <div>
             <h1 style="margin:0;">Student Profile</h1>
             <p class="muted" style="margin:6px 0 0;">{{ u.full_name }} · ID {{ u.id }}</p>
@@ -9,90 +9,67 @@
         <a class="btn secondary" href="{{ url_for('teacher.students') }}">Back</a>
     </div>
 
-    <form method="post" class="card form-card" style="margin-top:12px;">
+    <div class="card profile-card" style="margin-top:12px;">
         <div class="grid">
-            <div>
-                <label class="label">Email :: {{ u.email or '' }}</label>
-            </div>
-
-
-
-            <script>
-                (function () {
-                  const boxes = Array.from(document.querySelectorAll(".role-box"));
-                  if (!boxes.length) return;
-
-                  function updateRequired() {
-                    const anyChecked = boxes.some(b => b.checked);
-                    boxes.forEach(b => b.required = !anyChecked); // requires at least one
-                  }
-
-                  boxes.forEach(b => b.addEventListener("change", updateRequired));
-                  updateRequired();
-                })();
-            </script>
-
-            <div>
-                <label class="label">Full Name :: {{ u.first_name or '' }} {{ u.last_name or '' }}</label>
-            </div>
-
-
-            <div>
-                <label class="label">Phone :: {{ u.phone or '' }} </label>
-            </div>
-
-
-            <div>
-                <label class="label">Address 1 :: {{ u.address_1 or '' }}</label>
-            </div>
-
-            <div>
-                <label class="label">Address 2 :: {{ u.address_2 or '' }}</label>
-            </div>
-
-            <div>
-                <label class="label">City :: {{ u.city or '' }}</label>
-            </div>
-
-            <div>
-                <label class="label">Province/State :: {{ u.province or '' }}</label>
-
-            </div>
-
-            <div>
-                <label class="label">Postal Code :: {{ u.postal_code or '' }}</label>
-
-            </div>
-
-            <div>
-                <label class="label">Country :: {{ u.country or '' }}</label>
-
-            </div>
+            <div><label class="label">Email</label><div class="value">{{ u.email or '—' }}</div></div>
+            <div><label class="label">Full Name</label><div class="value">{{ u.first_name or '' }} {{ u.last_name or '' }}</div></div>
+            <div><label class="label">Phone</label><div class="value">{{ u.phone or '—' }}</div></div>
+            <div><label class="label">Current Class</label><div class="value">{{ u.title or '—' }}</div></div>
+            <div><label class="label">Address 1</label><div class="value">{{ u.address_1 or '—' }}</div></div>
+            <div><label class="label">Address 2</label><div class="value">{{ u.address_2 or '—' }}</div></div>
+            <div><label class="label">City</label><div class="value">{{ u.city or '—' }}</div></div>
+            <div><label class="label">Province/State</label><div class="value">{{ u.province or '—' }}</div></div>
+            <div><label class="label">Postal Code</label><div class="value">{{ u.postal_code or '—' }}</div></div>
+            <div><label class="label">Country</label><div class="value">{{ u.country or '—' }}</div></div>
         </div>
+    </div>
 
+    <div class="actions-row">
+        <a class="btn secondary" href="{{ url_for('teacher.certificate_pdf', student_id=u.id) }}">Promote to Next Class & Issue Certificate</a>
+        <form method="post" action="{{ url_for('teacher.email_latest_certificate', student_id=u.id) }}">
+            <button class="btn" type="submit">Email Latest Certificate</button>
+        </form>
+    </div>
 
-
-
-
-<!--        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;">-->
-<!--            <button class="btn" type="submit">Save Changes</button>-->
-<!--            <a class="btn secondary" href="{{ url_for('teacher.students') }}">Cancel</a>-->
-<!--        </div>-->
-    </form>
-        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;">
-    <label>Current Class :: {{ u.title or '' }} </label>
-
-   <a class="btn secondary" href=" {{url_for ('teacher.certificate_pdf', student_id=u.id) }} "> Promote To Next Class and issue Certificate </a>
-        </div>
-
-
+    <div class="card profile-card" style="margin-top:12px;">
+        <h3 style="margin-top:0;">Saved Certificates</h3>
+        {% if certificates %}
+            <table class="table" style="width:100%;">
+                <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Created At</th>
+                    <th style="width:140px;">Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for cert in certificates %}
+                    <tr>
+                        <td>{{ cert.name }}</td>
+                        <td>{{ cert.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td><a class="btn small" href="{{ cert.download_url }}">Download</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="muted" style="margin:0;">No certificates generated yet for this student.</p>
+        {% endif %}
+    </div>
 </section>
 
-
-
 <style>
-    .form-card{ padding: 12px; }
-    .label{ display:block; font-weight:950; margin: 0 0 6px; }
+    .profile-card { padding: 16px; }
+    .header-row, .actions-row {
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .actions-row{ margin-top:12px; }
+    .label{ display:block; font-weight:700; margin: 0 0 4px; color:#475569; }
+    .value{ font-weight:600; }
     .grid{
       display:grid;
       grid-template-columns: 1fr 1fr;
