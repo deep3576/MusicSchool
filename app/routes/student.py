@@ -61,15 +61,22 @@ def _time_to_hms(v) -> str:
 )
 @login_required
 def book():
-    row = db.session.execute(text(""" Select MIN(ta.start_at) AS min_start_dt,
-              MAX(ta.end_at)   AS max_end_dt,
-              MIN(TIME(ta.start_at)) AS min_time_day,
-              MAX(TIME(ta.end_at))   AS max_time_day
-    from teacher_availability ta where
-    teacher_id in (Select teacher_id  from teacher_class_level where class_level_id in (Select assigned_class_id  from `user` where id=:user_id)
-    and teacher_id in (Select id  from teacher where is_active =1 )
-    and ta.start_at >= NOW()
-    ) """),{"user_id":current_user.id}).mappings().first()
+    row = db.session.execute(text("""
+        SELECT
+          MIN(ta.start_at) AS min_start_dt,
+          MAX(ta.end_at)   AS max_end_dt,
+          MIN(TIME(ta.start_at)) AS min_time_day,
+          MAX(TIME(ta.end_at))   AS max_time_day
+        FROM teacher_availability ta
+        JOIN teacher t ON t.id = ta.teacher_id AND t.is_active = 1
+        JOIN teacher_class_level tcl
+          ON tcl.teacher_id = t.id
+         AND tcl.class_level_id = (SELECT assigned_class_id FROM `user` WHERE id = :user_id)
+         AND tcl.is_active = 1
+        WHERE ta.start_at >= NOW()
+          AND ta.is_booked = 0
+          AND ta.teacher_id <> :user_id
+    """),{"user_id":current_user.id}).mappings().first()
 
 
 
@@ -122,6 +129,7 @@ def contact():
 
 
 @main_bp.get("/api/availability")
+@login_required
 def api_all_availability():
     start = request.args.get("start")
     end = request.args.get("end")
@@ -139,13 +147,19 @@ def api_all_availability():
           COUNT(*) AS total_count
         FROM teacher_availability ta
         JOIN teacher t ON t.id = ta.teacher_id
+        JOIN teacher_class_level tcl
+          ON tcl.teacher_id = t.id
+         AND tcl.class_level_id = (SELECT assigned_class_id FROM `user` WHERE id = :user_id)
+         AND tcl.is_active = 1
         WHERE t.is_active = 1
+          AND ta.teacher_id <> :user_id
+          AND ta.is_booked = 0
           AND ta.start_at < :end_dt
           AND ta.end_at > :start_dt
           and ta.start_at > (SELECT CURRENT_TIMESTAMP() - INTERVAL 5 HOUR)
         GROUP BY ta.start_at, ta.end_at
         ORDER BY ta.start_at ASC
-    """), {"start_dt": start_dt, "end_dt": end_dt}).mappings().all()
+    """), {"start_dt": start_dt, "end_dt": end_dt, "user_id": current_user.id}).mappings().all()
 
     events = []
     for r in rows:
@@ -170,6 +184,7 @@ def api_all_availability():
 
 
 @main_bp.get("/api/availability/summary")
+@login_required
 def api_availability_summary():
     start = request.args.get("start")
     end = request.args.get("end")
@@ -186,13 +201,19 @@ def api_availability_summary():
           SUM(CASE WHEN ta.is_booked = 0 THEN 1 ELSE 0 END) AS available_slots
         FROM teacher_availability ta
         JOIN teacher t ON t.id = ta.teacher_id
+        JOIN teacher_class_level tcl
+          ON tcl.teacher_id = t.id
+         AND tcl.class_level_id = (SELECT assigned_class_id FROM `user` WHERE id = :user_id)
+         AND tcl.is_active = 1
         WHERE t.is_active = 1
+          AND ta.teacher_id <> :user_id
+          AND ta.is_booked = 0
           AND ta.start_at < :end_dt
           AND ta.end_at > :start_dt
           AND ta.start_at > (SELECT CURRENT_TIMESTAMP() - INTERVAL 5 HOUR)
         GROUP BY DATE(ta.start_at)
         ORDER BY d ASC
-    """), {"start_dt": start_dt, "end_dt": end_dt}).mappings().all()
+    """), {"start_dt": start_dt, "end_dt": end_dt, "user_id": current_user.id}).mappings().all()
 
     return jsonify([{
         "date": r["d"].isoformat() if hasattr(r["d"], "isoformat") else str(r["d"]),
@@ -233,12 +254,16 @@ def book_submit():
             updated = db.session.execute(text("""
                 UPDATE teacher_availability ta
                 JOIN teacher t ON t.id = ta.teacher_id
-                join user 
+                JOIN teacher_class_level tcl
+                  ON tcl.teacher_id = t.id
+                 AND tcl.class_level_id = (SELECT assigned_class_id FROM `user` WHERE id = :user_id)
+                 AND tcl.is_active = 1
                 SET ta.is_booked = 1
                 WHERE ta.id = :aid
                   AND ta.is_booked = 0
                   AND t.is_active = 1
-            """), {"aid": availability_id}).rowcount
+                  AND ta.teacher_id <> :user_id
+            """), {"aid": availability_id, "user_id": current_user.id}).rowcount
 
             if updated != 1:
                 db.session.rollback()
@@ -251,9 +276,14 @@ def book_submit():
                        COALESCE(ta.venue_id, t.default_venue_id) AS venue_id
                 FROM teacher_availability ta
                 JOIN teacher t ON t.id = ta.teacher_id
+                JOIN teacher_class_level tcl
+                  ON tcl.teacher_id = t.id
+                 AND tcl.class_level_id = (SELECT assigned_class_id FROM `user` WHERE id = :user_id)
+                 AND tcl.is_active = 1
                 WHERE ta.id = :aid
+                  AND ta.teacher_id <> :user_id
                 LIMIT 1
-            """), {"aid": availability_id}).mappings().first()
+            """), {"aid": availability_id, "user_id": current_user.id}).mappings().first()
 
             if not slot:
                 db.session.rollback()
@@ -274,14 +304,19 @@ def book_submit():
                        COALESCE(ta.venue_id, t.default_venue_id) AS venue_id
                 FROM teacher_availability ta
                 JOIN teacher t ON t.id = ta.teacher_id
+                JOIN teacher_class_level tcl
+                  ON tcl.teacher_id = t.id
+                 AND tcl.class_level_id = (SELECT assigned_class_id FROM `user` WHERE id = :user_id)
+                 AND tcl.is_active = 1
                 WHERE ta.is_booked = 0
                   AND t.is_active = 1
+                  AND ta.teacher_id <> :user_id
                   AND ta.start_at = :start_at
                   AND ta.end_at   = :end_at
                 ORDER BY ta.id ASC
                 LIMIT 1
                 FOR UPDATE
-            """), {"start_at": start_dt, "end_at": end_dt}).mappings().first()
+            """), {"start_at": start_dt, "end_at": end_dt, "user_id": current_user.id}).mappings().first()
 
             if not slot:
                 db.session.rollback()

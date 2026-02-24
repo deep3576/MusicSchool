@@ -127,12 +127,23 @@ def todaysClasses():
 @login_required
 def students():
     rows = db.session.execute(text("""
-        Select distinct u.id, u.email, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title  from user u
-        left join class_level cl on u.assigned_class_id = cl.id
-        inner join (Select * from user_role where is_active=1 and `role`='student' ) ur 
-        on ur.user_id=u.id 
-        where u.id=:id
-        order by u.created_at desc
+        SELECT DISTINCT
+          u.id,
+          u.email,
+          CONCAT(u.first_name,' ', u.last_name) AS full_name,
+          u.phone,
+          u.created_at,
+          cl.title
+        FROM user u
+        JOIN user_role ur
+          ON ur.user_id = u.id AND ur.role = 'student' AND ur.is_active = 1
+        JOIN teacher_class_level tcl
+          ON tcl.class_level_id = u.assigned_class_id
+         AND tcl.teacher_id = :teacher_id
+         AND tcl.is_active = 1
+        LEFT JOIN class_level cl ON cl.id = u.assigned_class_id
+        WHERE u.id <> :teacher_id
+        ORDER BY u.created_at DESC
         LIMIT 500
     """), {'id': current_user.id}).mappings().all()
 
@@ -205,6 +216,22 @@ def studentProfile(user_id: int):
 
         assigned_class_id_raw = (request.form.get("assigned_class_id") or "").strip()
         assigned_class_id = int(assigned_class_id_raw) if assigned_class_id_raw.isdigit() else None
+
+        dual_teacher_conflict = db.session.execute(text("""
+            SELECT 1
+            FROM user_role ur
+            JOIN teacher_class_level tcl
+              ON tcl.teacher_id = ur.user_id
+             AND tcl.class_level_id = :class_id
+             AND tcl.is_active = 1
+            WHERE ur.user_id = :user_id
+              AND ur.role = 'teacher'
+              AND ur.is_active = 1
+            LIMIT 1
+        """), {"user_id": user_id, "class_id": assigned_class_id}).first() if assigned_class_id else None
+        if dual_teacher_conflict:
+            flash("This user is also a teacher for the selected class and cannot be assigned to the same class as a student.", "danger")
+            return redirect(url_for("teacher.studentProfile", user_id=user_id))
 
         if not email:
             flash("Email is required.", "danger")
