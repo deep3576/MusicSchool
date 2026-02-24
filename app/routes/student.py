@@ -340,6 +340,13 @@ def book_submit():
 
         row=db.session.execute(text(""" Select assigned_class_id from user where id=:id """),{"id":current_user.id}).mappings().first()
         assigned_class_id = row["assigned_class_id"] if row else None
+
+        # Safety guard: a student must never be booked with themselves as teacher.
+        if int(slot["teacher_id"]) == int(current_user.id):
+            db.session.rollback()
+            flash("Invalid booking: teacher cannot be the current user.", "danger")
+            return redirect(url_for("student.book"))
+
         # Insert booking row
         db.session.execute(text("""
             INSERT INTO booking
