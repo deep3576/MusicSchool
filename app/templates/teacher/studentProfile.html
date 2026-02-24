@@ -33,22 +33,14 @@
             </script>
 
             <div>
-                <label class="label">First Name :: {{ u.first_name or '' }}</label>
+                <label class="label">Full Name :: {{ u.first_name or '' }} {{ u.last_name or '' }}</label>
             </div>
 
-            <div>
-                <label class="label">Last Name :: {{ u.last_name or '' }}</label>
-            </div>
 
             <div>
                 <label class="label">Phone :: {{ u.phone or '' }} </label>
             </div>
 
-            <div>
-                {% for c in classes %}
-                <label class="label">Assigned Class :: {{ c.label }} </label>
-                {% endfor %}
-            </div>
 
             <div>
                 <label class="label">Address 1 :: {{ u.address_1 or '' }}</label>
@@ -78,12 +70,25 @@
             </div>
         </div>
 
+
+
+
+
 <!--        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;">-->
 <!--            <button class="btn" type="submit">Save Changes</button>-->
 <!--            <a class="btn secondary" href="{{ url_for('teacher.students') }}">Cancel</a>-->
 <!--        </div>-->
     </form>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap;">
+    <label>Current Class :: {{ u.title or '' }} </label>
+
+   <a class="btn secondary" href=" {{url_for ('teacher.certificate_pdf', student_id=u.id) }} "> Promote To Next Class and issue Certificate </a>
+        </div>
+
+
 </section>
+
+
 
 <style>
     .form-card{ padding: 12px; }

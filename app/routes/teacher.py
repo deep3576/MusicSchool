@@ -2,7 +2,9 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import datetime, date, time, timedelta, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, has_request_context, \
-    session
+    session, make_response
+from weasyprint import HTML
+
 from ..security import admin_required , teacher_required
 from flask_login import current_user,logout_user, login_required
 from types import SimpleNamespace
@@ -140,20 +142,18 @@ def studentProfile(user_id: int):
 
     user = db.session.execute(text("""
         SELECT
-          id, email,
-          first_name, last_name, phone,
-          address_1, address_2, city, province, postal_code, country,
-          assigned_class_id
-        FROM `user`
-        WHERE id = :id
+          u.id,cl.title, u.email,
+          u.first_name, u.last_name, u.phone,
+          u.address_1, u.address_2, u.city, u.province, u.postal_code, u.country,
+          u.assigned_class_id
+        FROM `user` u
+        left join class_level cl 
+        on u.assigned_class_id = cl.id 
+        WHERE u.id = :id
         LIMIT 1
     """), {"id": user_id}).mappings().first()
 
-    rows=[]
-    rows = db.session.execute(text("""
-    Select role from user_role WHERE user_id=:id and is_active=1 LIMIT 3
-    """), {"id": user_id}).mappings().all()
-    user_roles = [r["role"] for r in rows]
+
 
     if not user:
         flash("User not found.", "danger")
@@ -319,9 +319,66 @@ def studentProfile(user_id: int):
         **user,
         "full_name": (f"{user['first_name'] or ''} {user['last_name'] or ''}".strip() or "—")
     })
-    return render_template("teacher/studentProfile.html", title="Student Profile", u=item, classes=classes , user_roles=user_roles
+
+
+    return render_template("teacher/studentProfile.html", title="Student Profile", u=item, classes=classes
 
                            )
+
+
+@teacher_bp.get("/certificate/<int:student_id>/pdf")
+def certificate_pdf(student_id):
+    student = db.session.execute(text("""
+            SELECT
+              u.id,cl.title, u.email,
+              concat(u.first_name, u.last_name) as name,
+              u.assigned_class_id,cl.description
+            FROM `user` u
+            left join class_level cl 
+            on u.assigned_class_id = cl.id 
+            WHERE u.id = :id
+            LIMIT 1"""),{'id':student_id}).first()
+
+
+
+    if student[4] == 11:
+        level=0
+        next_class_id =1
+    else:
+        level=student[4]
+        next_class_id =int(student[4])+1
+    try:
+        db.session.execute(text("""
+        UPDATE `user` Set assigned_class_id = :assigned_class_id
+                    WHERE id = :id
+                    LIMIT 1"""), {'id': student_id, 'assigned_class_id': next_class_id})
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("[admin.user_edit] update failed")
+        flash("Could not update user. Check logs.", "danger")
+        return redirect(url_for("teacher.studentProfile", user_id=student_id))
+    data = {
+        "certificate_id": f"TRS-{student_id:05d}",
+        "issue_date": datetime.now(),
+        "student_name": student[3],
+        "course_name": student[5],
+        "level_name": f"Level - {level}",
+        "duration_text": "8 Weeks",
+        "instructor_name": current_user.first_name + ' ' +current_user.last_name,
+        "director_name": "Harjeet Singh",
+    }
+
+    html = render_template("certificates/certificate.html", **data)
+
+    # base_url is important so WeasyPrint can load /static/... assets (logo, css, etc.)
+    pdf_bytes = HTML(string=html, base_url=request.root_url).write_pdf()
+
+    resp = make_response(pdf_bytes)
+    resp.headers["Content-Type"] = "application/pdf"
+    resp.headers["Content-Disposition"] = f'inline; filename="{data["certificate_id"]}.pdf"'
+    return resp
+
 
 
 @teacher_bp.post("/todaysClasses/<int:booking_id>/absent")
