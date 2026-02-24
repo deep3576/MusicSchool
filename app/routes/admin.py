@@ -447,6 +447,16 @@ def teacherClassAssign(teacher_id):
         flash("Please select at least one class.", "warning")
         return redirect(url_for("admin.teachers"))
 
+    student_row = db.session.execute(text("""
+        SELECT assigned_class_id
+        FROM `user`
+        WHERE id = :teacher_id
+        LIMIT 1
+    """), {"teacher_id": teacher_id}).mappings().first()
+    if student_row and student_row["assigned_class_id"] in level_ids:
+        flash("This user is also a student and cannot be assigned to teach their own student class level.", "danger")
+        return redirect(url_for("admin.teachers"))
+
     now = datetime.now(timezone.utc)
     db.session.execute(text("""
         Delete from teacher_class_level WHERE teacher_id = ':teacher_id'
@@ -505,6 +515,100 @@ def teacher_toggle(teacher_id):
     """), {"id": teacher_id})
     db.session.commit()
     flash("Teacher status updated.", "success")
+    return redirect(url_for("admin.teachers"))
+
+
+@admin_bp.post("/teachers/<int:teacher_id>/mark-sick-today")
+@admin_required
+def teacher_mark_sick_today(teacher_id: int):
+    today = date.today()
+
+    # block same-day future slots for sick teacher
+    db.session.execute(text("""
+        UPDATE teacher_availability
+        SET is_booked = 1
+        WHERE teacher_id = :teacher_id
+          AND DATE(start_at) = :today
+          AND is_booked = 0
+    """), {"teacher_id": teacher_id, "today": today})
+
+    bookings = db.session.execute(text("""
+        SELECT b.id, b.class_level_id, ta.start_at, ta.end_at, b.availability_id
+        FROM booking b
+        JOIN teacher_availability ta ON ta.id = b.availability_id
+        WHERE b.teacher_id = :teacher_id
+          AND b.status = 'BOOKED'
+          AND DATE(ta.start_at) = :today
+        ORDER BY ta.start_at ASC
+    """), {"teacher_id": teacher_id, "today": today}).mappings().all()
+
+    moved = 0
+    failed = 0
+
+    for b in bookings:
+        replacement = db.session.execute(text("""
+            SELECT ta.id, ta.teacher_id
+            FROM teacher_availability ta
+            JOIN teacher t ON t.id = ta.teacher_id
+            JOIN teacher_class_level tcl
+              ON tcl.teacher_id = ta.teacher_id
+             AND tcl.class_level_id = :class_level_id
+             AND tcl.is_active = 1
+            WHERE ta.teacher_id <> :teacher_id
+              AND t.is_active = 1
+              AND ta.is_booked = 0
+              AND ta.start_at = :start_at
+              AND ta.end_at = :end_at
+            ORDER BY ta.id ASC
+            LIMIT 1
+            FOR UPDATE
+        """), {
+            "teacher_id": teacher_id,
+            "class_level_id": b["class_level_id"],
+            "start_at": b["start_at"],
+            "end_at": b["end_at"],
+        }).mappings().first()
+
+        if not replacement:
+            failed += 1
+            continue
+
+        db.session.execute(text("""
+            UPDATE teacher_availability
+            SET is_booked = 1
+            WHERE id = :new_availability_id
+              AND is_booked = 0
+        """), {"new_availability_id": replacement["id"]})
+
+        db.session.execute(text("""
+            UPDATE teacher_availability
+            SET is_booked = 0
+            WHERE id = :old_availability_id
+        """), {"old_availability_id": b["availability_id"]})
+
+        db.session.execute(text("""
+            UPDATE booking
+            SET teacher_id = :new_teacher_id,
+                availability_id = :new_availability_id,
+                last_update_timestamp = NOW(),
+                last_update_by = 'Admin Sick-Reassign'
+            WHERE id = :booking_id
+              AND status = 'BOOKED'
+        """), {
+            "new_teacher_id": replacement["teacher_id"],
+            "new_availability_id": replacement["id"],
+            "booking_id": b["id"],
+        })
+
+        moved += 1
+
+    db.session.commit()
+
+    if moved == 0 and failed == 0:
+        flash("Teacher marked sick for today. Future same-day slots are blocked.", "warning")
+    else:
+        flash(f"Teacher marked sick. Reassigned {moved} booking(s); {failed} could not be reassigned.", "success" if moved else "warning")
+
     return redirect(url_for("admin.teachers"))
 
 
@@ -1726,6 +1830,22 @@ def user_edit(user_id: int):
 
         assigned_class_id_raw = (request.form.get("assigned_class_id") or "").strip()
         assigned_class_id = int(assigned_class_id_raw) if assigned_class_id_raw.isdigit() else None
+
+        dual_teacher_conflict = db.session.execute(text("""
+            SELECT 1
+            FROM user_role ur
+            JOIN teacher_class_level tcl
+              ON tcl.teacher_id = ur.user_id
+             AND tcl.class_level_id = :class_id
+             AND tcl.is_active = 1
+            WHERE ur.user_id = :user_id
+              AND ur.role = 'teacher'
+              AND ur.is_active = 1
+            LIMIT 1
+        """), {"user_id": user_id, "class_id": assigned_class_id}).first() if assigned_class_id else None
+        if dual_teacher_conflict:
+            flash("This user is also a teacher for the selected class and cannot be assigned to the same class as a student.", "danger")
+            return redirect(url_for("admin.user_edit", user_id=user_id))
 
         # Basic validations
         if not email:
