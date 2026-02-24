@@ -1,4 +1,5 @@
 import configparser
+import mimetypes
 import smtplib
 from email.message import EmailMessage
 from pathlib import Path
@@ -49,7 +50,13 @@ def _load_email_config() -> tuple[str, int, str, str, str]:
     return host, port, user, pwd, from_email
 
 
-def send_email_actual(to_email: str, subject: str, body: str, html: str | None = None) -> None:
+def send_email_actual(
+    to_email: str,
+    subject: str,
+    body: str,
+    html: str | None = None,
+    attachments: list[str] | None = None,
+) -> None:
     host, port, user, pwd, from_email = _load_email_config()
 
     msg = EmailMessage()
@@ -63,6 +70,21 @@ def send_email_actual(to_email: str, subject: str, body: str, html: str | None =
     # If html provided, add it as an alternative part
     if html:
         msg.add_alternative(html, subtype="html")
+
+    for attachment in attachments or []:
+        path = Path(attachment)
+        if not path.exists() or not path.is_file():
+            raise FileNotFoundError(f"Attachment not found: {path}")
+
+        guessed, _ = mimetypes.guess_type(path.name)
+        maintype, subtype = (guessed.split("/", 1) if guessed else ("application", "octet-stream"))
+        with path.open("rb") as fp:
+            msg.add_attachment(
+                fp.read(),
+                maintype=maintype,
+                subtype=subtype,
+                filename=path.name,
+            )
 
     try:
         print(f"Connecting to {host}:{port} ...")
@@ -85,21 +107,20 @@ def send_email_actual(to_email: str, subject: str, body: str, html: str | None =
         raise  # important so your app logs it too
 
 
-def send_email_bg(app, to, subject, body, html):
+def send_email_bg(app, to, subject, body, html, attachments):
     # Need app context because thread runs outside request context
     with app.app_context():
         try:
-            send_email_actual(to, subject=subject, body=body, html=html)
+            send_email_actual(to, subject=subject, body=body, html=html, attachments=attachments)
         except Exception:
             app.logger.exception("Background email failed")
 
-def send_email(to, subject, body, html:str | None = None):
+def send_email(to, subject, body, html: str | None = None, attachments: list[str] | None = None):
     app = current_app._get_current_object()
     Thread(
         target=send_email_bg,
-        args=(app, to, subject, body, html),
+        args=(app, to, subject, body, html, attachments),
         daemon=True
     ).start()
-
 
 
