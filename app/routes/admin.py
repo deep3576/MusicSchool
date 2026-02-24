@@ -447,16 +447,6 @@ def teacherClassAssign(teacher_id):
         flash("Please select at least one class.", "warning")
         return redirect(url_for("admin.teachers"))
 
-    student_row = db.session.execute(text("""
-        SELECT assigned_class_id
-        FROM `user`
-        WHERE id = :teacher_id
-        LIMIT 1
-    """), {"teacher_id": teacher_id}).mappings().first()
-    if student_row and student_row["assigned_class_id"] in level_ids:
-        flash("This user is also a student and cannot be assigned to teach their own student class level.", "danger")
-        return redirect(url_for("admin.teachers"))
-
     now = datetime.now(timezone.utc)
     db.session.execute(text("""
         Delete from teacher_class_level WHERE teacher_id = ':teacher_id'
