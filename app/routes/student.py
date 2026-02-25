@@ -55,6 +55,45 @@ def _time_to_hms(v) -> str:
     # fallback (string etc.)
     return str(v)
 
+
+
+@main_bp.get("/about")
+def about():
+    return render_template("about.html", title="About")
+
+
+@main_bp.get("/admissions")
+def admissions():
+    return render_template("admissions.html", title="Admissions")
+
+
+@main_bp.get("/auth/login")
+def auth_login_alias():
+    return redirect(url_for("student.login"))
+
+
+@main_bp.route("/auth/signup", methods=["GET", "POST"])
+def auth_signup_alias():
+    return signup()
+
+
+@main_bp.get("/student")
+@login_required
+def student_home_alias():
+    return redirect(url_for("student.book"))
+
+
+@main_bp.get("/booking")
+@login_required
+def booking_alias():
+    return redirect(url_for("student.book"))
+
+
+@main_bp.get("/my_bookings")
+@login_required
+def my_bookings_alias():
+    return redirect(url_for("student.my_bookings"))
+
 @main_bp.route(
     "/book",
     methods=["get"],

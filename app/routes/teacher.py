@@ -33,6 +33,12 @@ def _ns(d: dict) -> SimpleNamespace:
     return SimpleNamespace(**d)
 
 
+@teacher_bp.get("/")
+@login_required
+def teacher_home():
+    return redirect(url_for("teacher.todaysClasses"))
+
+
 def _ensure_teacher_role():
     roles = current_user.role or []
     active_role = session.get("active_role")
