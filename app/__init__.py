@@ -2,7 +2,7 @@
 import os
 import configparser
 
-from flask import Flask, session
+from flask import Flask, jsonify, redirect, request, session, url_for
 from flask_login import current_user
 from flask_apscheduler import APScheduler
 
@@ -62,6 +62,16 @@ def create_app() -> Flask:
 
     db.init_app(app)
     login_manager.init_app(app)
+
+    @login_manager.unauthorized_handler
+    def _handle_unauthorized():
+        if request.path.startswith("/api/"):
+            return jsonify({"ok": False, "error": "Authentication required"}), 401
+
+        login_view = login_manager.login_view
+        if login_view:
+            return redirect(url_for(login_view, next=request.url))
+        return ("Unauthorized", 401)
 
     # SQL-only user loader (no ORM models)
     from .auth_user import register_user_loader
