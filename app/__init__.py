@@ -68,7 +68,10 @@ def create_app() -> Flask:
         if request.path.startswith("/api/"):
             return jsonify({"ok": False, "error": "Authentication required"}), 401
 
-        return redirect(url_for("student.auth_login_alias", next=request.url))
+        login_view = login_manager.login_view
+        if login_view:
+            return redirect(url_for(login_view, next=request.url))
+        return ("Unauthorized", 401)
 
     # SQL-only user loader (no ORM models)
     from .auth_user import register_user_loader
