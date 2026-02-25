@@ -60,9 +60,10 @@
               {{ current_user.full_name }}
                 {% if active_role %}
                       <span class="pill">{{ active_role|capitalize }}</span>
-
             {% endif %}
-
+            {% if active_role == 'student' %}
+                      <span class="credits-pill" title="Available credits">Credits: {{ current_user.available_credits or 0 }}</span>
+            {% endif %}
           </span>
             <a class="btn secondary" href="{{ url_for('student.logout') }}">Logout</a>
             {% if current_user.is_authenticated and (current_user.role|length > 1) %}

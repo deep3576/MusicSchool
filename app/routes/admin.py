@@ -1755,7 +1755,8 @@ def users():
             "full_name": r["full_name"],
             "phone": r["phone"],
             "created_at": r["created_at"],
-            "assigned_class_id": r["title"]
+            "assigned_class_id": r["title"],
+            "available_credits": int(r["available_credits"] or 0)
         }))
 
     return render_template("admin/users.html", title="Users", items=items)
@@ -1787,7 +1788,7 @@ def user_edit(user_id: int):
           id, email,
           first_name, last_name, phone,
           address_1, address_2, city, province, postal_code, country,
-          assigned_class_id
+          assigned_class_id, available_credits
         FROM `user`
         WHERE id = :id
         LIMIT 1
@@ -1820,6 +1821,12 @@ def user_edit(user_id: int):
 
         assigned_class_id_raw = (request.form.get("assigned_class_id") or "").strip()
         assigned_class_id = int(assigned_class_id_raw) if assigned_class_id_raw.isdigit() else None
+
+        add_credits_raw = (request.form.get("add_credits") or "").strip()
+        add_credits = int(add_credits_raw) if add_credits_raw.isdigit() else 0
+        mode_of_payment = (request.form.get("mode_of_payment") or "").strip().lower()
+        if mode_of_payment not in {"cash", "online"}:
+            mode_of_payment = None
 
         dual_teacher_conflict = db.session.execute(text("""
             SELECT 1
@@ -1965,6 +1972,79 @@ def user_edit(user_id: int):
                         LIMIT 1
                     """), {"id": user_id, "role": r})
 
+            if add_credits > 0:
+                if "student" not in roles:
+                    flash("Credits can be added only for users with student role.", "danger")
+                    db.session.rollback()
+                    return redirect(url_for("admin.user_edit", user_id=user_id))
+
+                if not mode_of_payment:
+                    flash("Please select mode of payment when adding credits.", "danger")
+                    db.session.rollback()
+                    return redirect(url_for("admin.user_edit", user_id=user_id))
+
+                before_row = db.session.execute(text("""
+                    SELECT available_credits
+                    FROM `user`
+                    WHERE id = :id
+                    LIMIT 1
+                    FOR UPDATE
+                """), {"id": user_id}).mappings().first()
+                before_balance = int((before_row or {}).get("available_credits") or 0)
+                after_balance = before_balance + add_credits
+
+                db.session.execute(text("""
+                    UPDATE `user`
+                    SET available_credits = :after_balance
+                    WHERE id = :id
+                    LIMIT 1
+                """), {"after_balance": after_balance, "id": user_id})
+
+                tx_cols = {
+                    (r["Field"] or "").lower()
+                    for r in db.session.execute(text("SHOW COLUMNS FROM transactions")).mappings().all()
+                }
+
+                tx_columns = [
+                    "teacher_id",
+                    "type_of_transaction",
+                    "mode_of_payment",
+                    "student_id",
+                    "action_performer_user_id",
+                    "balance_before_this_transaction",
+                    "balance_after_this_transaction",
+                    "amount_added",
+                    "credits_added",
+                    "total_available_credits",
+                    "created_at",
+                ]
+                tx_values = [
+                    "0",
+                    "'credit'",
+                    ":mode_of_payment",
+                    ":student_id",
+                    ":actor_id",
+                    ":before",
+                    ":after",
+                    "NULL",
+                    ":credits_added",
+                    ":total",
+                    "NOW()",
+                ]
+                tx_params = {
+                    "mode_of_payment": mode_of_payment,
+                    "student_id": int(user_id),
+                    "actor_id": int(current_user.id),
+                    "before": before_balance,
+                    "after": after_balance,
+                    "credits_added": add_credits,
+                    "total": after_balance,
+                }
+                db.session.execute(text(f"""
+                    INSERT INTO transactions ({", ".join(tx_columns)})
+                    VALUES ({", ".join(tx_values)})
+                """), tx_params)
+
             db.session.commit()
             flash("User updated successfully.", "success")
             return redirect(url_for("admin.users"))
@@ -2065,7 +2145,7 @@ def inject_admin_message_badge():
 @admin_required
 def students():
     rows = db.session.execute(text("""
-        Select distinct u.id, u.email, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title  from user u
+        Select distinct u.id, u.email, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title, u.available_credits from user u
         left join class_level cl on u.assigned_class_id = cl.id
         inner join (Select * from user_role where is_active=1 and `role`='student' ) ur 
         on ur.user_id=u.id 
@@ -2082,7 +2162,8 @@ def students():
             "full_name": r["full_name"],
             "phone": r["phone"],
             "created_at": r["created_at"],
-            "assigned_class_id": r["title"]
+            "assigned_class_id": r["title"],
+            "available_credits": int(r["available_credits"] or 0)
         }))
 
     return render_template("admin/students.html", title="Students", items=items)
