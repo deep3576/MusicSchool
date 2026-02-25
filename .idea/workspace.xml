@@ -9,10 +9,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="add adding teacher_ Bp">
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="updating Teacher Portal in Admin">
+      <change afterPath="$PROJECT_DIR$/app/create_meeting.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/routes/teacher.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/teacher.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/teacher/dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/teacher/dashboard.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/student.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/student.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,21 +58,24 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python.admin.executor": "Run",
     "Python.check_db.executor": "Run",
+    "Python.create_meeting.executor": "Run",
     "Python.email_test.executor": "Run",
     "Python.emailer.executor": "Run",
     "Python.main.executor": "Run",
     "Python.models.executor": "Run",
     "Python.run.executor": "Run",
+    "Python.student.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "master",
-    "last_opened_file_path": "/Users/inderdeepsingh/PycharmProjects/MusicSchool/app/static/img",
+    "last_opened_file_path": "/Users/inderdeepsingh/PycharmProjects/MusicSchool/app/templates/teacher",
     "run.code.analysis.last.selected.profile": "pProject Default",
-    "settings.editor.selected.configurable": "preferences.lookFeel"
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/templates/teacher" />
       <recent name="$PROJECT_DIR$/app/static/img" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -218,8 +222,139 @@
       <option name="project" value="LOCAL" />
       <updated>1769444655262</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="add adding teacher_ Bp">
+      <option name="closed" value="true" />
+      <created>1769445344960</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1769445344960</updated>
+    </task>
+    <task id="LOCAL-00014" summary="add adding teacher_ Bp">
+      <option name="closed" value="true" />
+      <created>1771810890103</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1771810890103</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Sync users IDs and teacherIds">
+      <option name="closed" value="true" />
+      <created>1771865020591</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1771865020591</updated>
+    </task>
+    <task id="LOCAL-00016" summary="Update teacher Portal">
+      <option name="closed" value="true" />
+      <created>1771866990448</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1771866990448</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Update teacher Portal">
+      <option name="closed" value="true" />
+      <created>1771898233178</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1771898233178</updated>
+    </task>
+    <task id="LOCAL-00018" summary="Update teacher Portal">
+      <option name="closed" value="true" />
+      <created>1771901230100</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1771901230100</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Adding credit system.">
+      <option name="closed" value="true" />
+      <created>1771985863004</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1771985863004</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Adding credit system.">
+      <option name="closed" value="true" />
+      <created>1771985984723</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1771985984723</updated>
+    </task>
+    <task id="LOCAL-00021" summary="Adding credit system.">
+      <option name="closed" value="true" />
+      <created>1771986036155</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1771986036155</updated>
+    </task>
+    <task id="LOCAL-00022" summary="Adding credit system.">
+      <option name="closed" value="true" />
+      <created>1771986741286</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1771986741286</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Adding credit system.">
+      <option name="closed" value="true" />
+      <created>1771986909028</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1771986909028</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Adding credit system.">
+      <option name="closed" value="true" />
+      <created>1771987556788</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1771987556788</updated>
+    </task>
+    <task id="LOCAL-00025" summary="Adding credit system.">
+      <option name="closed" value="true" />
+      <created>1771989353895</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1771989353895</updated>
+    </task>
+    <task id="LOCAL-00026" summary="updating Teacher Portal in Admin">
+      <option name="closed" value="true" />
+      <created>1771993678878</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1771993678878</updated>
+    </task>
+    <task id="LOCAL-00027" summary="updating Teacher Portal in Admin">
+      <option name="closed" value="true" />
+      <created>1771994187646</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1771994187646</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="CSS Updations" />
@@ -233,6 +368,10 @@
     <MESSAGE value="starting of new log in for teachers." />
     <MESSAGE value="add multi Role handling" />
     <MESSAGE value="add adding teacher_ Bp" />
-    <option name="LAST_COMMIT_MESSAGE" value="add adding teacher_ Bp" />
+    <MESSAGE value="Sync users IDs and teacherIds" />
+    <MESSAGE value="Update teacher Portal" />
+    <MESSAGE value="Adding credit system." />
+    <MESSAGE value="updating Teacher Portal in Admin" />
+    <option name="LAST_COMMIT_MESSAGE" value="updating Teacher Portal in Admin" />
   </component>
 </project>

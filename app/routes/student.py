@@ -574,7 +574,7 @@ def my_bookings():
     rows = db.session.execute(text("""
         SELECT
           b.id, b.status, b.created_at,
-          t.name AS teacher_name,
+          concat(t.first_name ,' ',t.last_name) AS teacher_name,
           ta.start_at, ta.end_at,
           cl.code AS class_code, cl.title AS class_title,
           v.name AS venue_name
