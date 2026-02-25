@@ -13,8 +13,8 @@ def create_google_meet():
     creds = None
 
     # Token file stores user access after first login
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists('../instance/API/token.json'):
+        creds = Credentials.from_authorized_user_file('../instance/API/token.json', SCOPES)
 
     # If no valid credentials, login flow starts
     if not creds or not creds.valid:
@@ -25,7 +25,7 @@ def create_google_meet():
                 '../instance/API/credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
 
-        with open('token.json', 'w') as token:
+        with open('../instance/API/token.json', 'w') as token:
             token.write(creds.to_json())
 
     service = build('calendar', 'v3', credentials=creds)
@@ -47,8 +47,8 @@ def create_google_meet():
             'timeZone': 'America/Toronto',
         },
         'attendees': [
-            {'email': 'student@email.com'},
-            {'email': 'teacher@email.com'},
+            {'email': 'deep3576@gmail.com'},
+            {'email': 'uber.inderdeep@gmail.com'}
         ],
         'conferenceData': {
             'createRequest': {
