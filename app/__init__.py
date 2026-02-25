@@ -104,8 +104,8 @@ def create_app() -> Flask:
         id="daily_scheduling_midnight",
         func=run_midnight_job,
         trigger="cron",
-        hour=0,               # midnight
-        minute=33,
+        hour=23,               # midnight
+        minute=30,
         replace_existing=True,
         timezone="America/Toronto",
     )

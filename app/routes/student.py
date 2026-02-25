@@ -347,7 +347,7 @@ def book_submit():
         available_credits = int((row or {}).get("available_credits") or 0)
         if available_credits < 1:
             db.session.rollback()
-            flash("You do not have enough credits to book this class.", "warning")
+            flash("You do not have enough credits to book this class. Add Credits to your Account.", "warning")
             return redirect(url_for("student.book"))
 
         # Safety guard: a student must never be booked with themselves as teacher.
