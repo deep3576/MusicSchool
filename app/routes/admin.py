@@ -1577,7 +1577,7 @@ def booking_absent(booking_id):
             WHERE id = :aid
         """), {"aid": row["availability_id"]})
     db.session.commit()
-    flash("Booking cancelled and slot freed.", "success")
+    flash("Student marked as ABSENT for this booking.", "success")
     return redirect(url_for("admin.bookings"))
 
 @admin_bp.post("/bookings/<int:booking_id>/present")
