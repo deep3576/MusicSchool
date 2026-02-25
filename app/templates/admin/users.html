@@ -62,7 +62,7 @@
                     data-user-name="{{ u.full_name }}"
                     data-user-role="{{ u.role or '' }}"
                     data-current-credits="{{ u.available_credits }}"
-                  >Add Credit (Bal: {{ u.available_credits }})</button>
+                  >Add Credit</button>
                 </td>
               </tr>
             {% endfor %}
@@ -79,8 +79,7 @@
         <h3 id="creditModalTitle" style="margin:0;">Add Credits</h3>
         <button type="button" class="btn secondary small" id="closeCreditModal">Close</button>
       </div>
-      <p class="muted" id="creditModalUser" style="margin:8px 0 8px;"></p>
-      <div class="old-balance-label" id="oldBalanceLabel">Old Balance: 0</div>
+      <p class="muted" id="creditModalUser" style="margin:8px 0 12px;"></p>
 
       <form method="post" id="creditForm">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -123,23 +122,11 @@
     position:fixed; inset:0; background:rgba(15,18,30,.5); z-index:1200;
     display:flex; align-items:center; justify-content:center; padding:16px;
   }
-  .modal-backdrop[hidden]{ display:none !important; }
   .modal-card{
     width:min(640px, 100%); background:#fff; border:1px solid var(--border,#e6e6ee);
     border-radius:16px; padding:14px; box-shadow:0 14px 40px rgba(15,18,30,.2);
   }
   .label{ display:block; font-weight:700; margin:0 0 6px; }
-  .old-balance-label{
-    display:inline-block;
-    font-weight:800;
-    font-size:13px;
-    color:#4b2a00;
-    background:linear-gradient(135deg, #ffe9b0, #ffd369);
-    border:1px solid rgba(191,126,0,.35);
-    border-radius:999px;
-    padding:6px 10px;
-    margin:0 0 12px;
-  }
 
 </style>
 <script>
@@ -149,7 +136,6 @@
   const closeBtn = document.getElementById('closeCreditModal');
   const form = document.getElementById('creditForm');
   const userText = document.getElementById('creditModalUser');
-  const oldBalanceLabel = document.getElementById('oldBalanceLabel');
 
   function closeModal(){ modal.setAttribute('hidden','hidden'); }
   function openModal(btn){
@@ -165,15 +151,13 @@
 
     form.action = `/admin/users/${userId}/credits/add`;
     form.reset();
-    userText.textContent = `${userName}`;
-    oldBalanceLabel.textContent = `Old Balance: ${currentCredits}`;
+    userText.textContent = `${userName} · Current credits: ${currentCredits}`;
     modal.removeAttribute('hidden');
   }
 
   openButtons.forEach((btn)=> btn.addEventListener('click', ()=>openModal(btn)));
   closeBtn?.addEventListener('click', closeModal);
   modal?.addEventListener('click', (e)=> { if (e.target === modal) closeModal(); });
-  document.addEventListener('keydown', (e)=> { if (e.key === "Escape" && !modal.hasAttribute("hidden")) closeModal(); });
 })();
 </script>
 {% endblock %}
