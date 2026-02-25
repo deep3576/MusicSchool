@@ -83,27 +83,6 @@
                 </select>
             </div>
 
-            <div class="credit-box">
-                <label class="label">Current Available Credits</label>
-                <input class="input" value="{{ u.available_credits or 0 }}" readonly>
-                <small class="muted">Visible only to students in top bar.</small>
-            </div>
-
-            <div class="credit-box">
-                <label class="label">Add Credits (Admin)</label>
-                <input class="input" type="number" min="0" step="1" name="add_credits" value="0">
-                <small class="muted">Use this when student pays offline/cash.</small>
-            </div>
-
-            <div class="credit-box">
-                <label class="label">Mode of Payment (for transaction log)</label>
-                <select class="input" name="mode_of_payment">
-                    <option value="">— Select —</option>
-                    <option value="cash">Cash</option>
-                    <option value="online">Online</option>
-                </select>
-            </div>
-
             <div>
                 <label class="label">Address 1</label>
                 <input class="input" name="address_1" value="{{ u.address_1 or '' }}">
