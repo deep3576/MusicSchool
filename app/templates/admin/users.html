@@ -39,8 +39,9 @@
               <th>Email</th>
               <th>Role</th>
               <th>Assigned Class</th>
+              <th>Credits</th>
               <th>Phone</th>
-              <th style="width:120px;">Action</th>
+              <th style="width:220px;">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -50,9 +51,18 @@
                 <td>{{ u.email }}</td>
                 <td><span class="pill">{{ u.role }}</span></td>
                 <td>{{ u.assigned_class_id }}</td>
+                <td><span class="pill">{{ u.available_credits }}</span></td>
                 <td>{{ u.phone }}</td>
-                <td>
+                <td style="display:flex; gap:8px; flex-wrap:wrap;">
                   <a class="btn small" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Edit</a>
+                  <button
+                    class="btn secondary small open-credit-modal"
+                    type="button"
+                    data-user-id="{{ u.id }}"
+                    data-user-name="{{ u.full_name }}"
+                    data-user-role="{{ u.role or '' }}"
+                    data-current-credits="{{ u.available_credits }}"
+                  >Add Credit</button>
                 </td>
               </tr>
             {% endfor %}
@@ -61,7 +71,40 @@
       </div>
     {% endif %}
   </div>
+
+
+  <div id="creditModal" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="creditModalTitle">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <h3 id="creditModalTitle" style="margin:0;">Add Credits</h3>
+        <button type="button" class="btn secondary small" id="closeCreditModal">Close</button>
+      </div>
+      <p class="muted" id="creditModalUser" style="margin:8px 0 12px;"></p>
+
+      <form method="post" id="creditForm">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div>
+            <label class="label">Credits to Add</label>
+            <input class="input" type="number" min="1" step="1" name="credits" required>
+          </div>
+          <div>
+            <label class="label">Mode of Transaction</label>
+            <select class="input" name="mode_of_payment" required>
+              <option value="">— Select —</option>
+              <option value="cash">Cash</option>
+              <option value="online">Online</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+          <button type="submit" class="btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </section>
+
 
 <style>
   .admin-head{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-end; }
@@ -74,5 +117,48 @@
   @media (max-width: 520px){
     .admin-search .input{ width:100%; }
   }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(15,18,30,.5); z-index:1200;
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  .modal-card{
+    width:min(640px, 100%); background:#fff; border:1px solid var(--border,#e6e6ee);
+    border-radius:16px; padding:14px; box-shadow:0 14px 40px rgba(15,18,30,.2);
+  }
+  .label{ display:block; font-weight:700; margin:0 0 6px; }
+
 </style>
+<script>
+(function(){
+  const modal = document.getElementById('creditModal');
+  const openButtons = document.querySelectorAll('.open-credit-modal');
+  const closeBtn = document.getElementById('closeCreditModal');
+  const form = document.getElementById('creditForm');
+  const userText = document.getElementById('creditModalUser');
+
+  function closeModal(){ modal.setAttribute('hidden','hidden'); }
+  function openModal(btn){
+    const userId = btn.dataset.userId;
+    const userName = btn.dataset.userName || 'User';
+    const userRole = (btn.dataset.userRole || '').toLowerCase();
+    const currentCredits = btn.dataset.currentCredits || '0';
+
+    if (!userRole.includes('student')) {
+      alert('Credits can only be added to student users.');
+      return;
+    }
+
+    form.action = `/admin/users/${userId}/credits/add`;
+    form.reset();
+    userText.textContent = `${userName} · Current credits: ${currentCredits}`;
+    modal.removeAttribute('hidden');
+  }
+
+  openButtons.forEach((btn)=> btn.addEventListener('click', ()=>openModal(btn)));
+  closeBtn?.addEventListener('click', closeModal);
+  modal?.addEventListener('click', (e)=> { if (e.target === modal) closeModal(); });
+})();
+</script>
 {% endblock %}
+
