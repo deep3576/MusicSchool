@@ -1736,7 +1736,7 @@ def booking_edit(booking_id):
 def users():
     rows = db.session.execute(text("""
     Select u.id, u.email, ur.role, concat(u.first_name,' ', u.last_name) as full_name, 
-     u.phone, u.created_at,cl.title  from user u
+     u.phone, u.created_at,cl.title, u.available_credits from user u
      left join class_level cl on u.assigned_class_id = cl.id
      left join (SELECT user_id, GROUP_CONCAT(DISTINCT role ORDER BY role SEPARATOR ', ') AS role FROM user_role
   WHERE is_active = 1
@@ -1755,7 +1755,8 @@ def users():
             "full_name": r["full_name"],
             "phone": r["phone"],
             "created_at": r["created_at"],
-            "assigned_class_id": r["title"]
+            "assigned_class_id": r["title"],
+            "available_credits": int(r["available_credits"] or 0)
         }))
 
     return render_template("admin/users.html", title="Users", items=items)
@@ -1984,6 +1985,93 @@ def user_edit(user_id: int):
                            )
 
 
+@admin_bp.post("/users/<int:user_id>/credits/add")
+@admin_required
+def user_add_credits(user_id: int):
+    credits_raw = (request.form.get("credits") or "").strip()
+    mode_of_payment = (request.form.get("mode_of_payment") or "").strip().lower()
+
+    credits = int(credits_raw) if credits_raw.isdigit() else 0
+    if credits <= 0:
+        flash("Please enter a valid credit amount.", "danger")
+        return redirect(url_for("admin.users"))
+
+    if mode_of_payment not in {"cash", "online"}:
+        flash("Please select mode of payment.", "danger")
+        return redirect(url_for("admin.users"))
+
+    try:
+        user_row = db.session.execute(text("""
+            SELECT u.id, u.available_credits
+            FROM `user` u
+            JOIN user_role ur ON ur.user_id = u.id AND ur.role = 'student' AND ur.is_active = 1
+            WHERE u.id = :id
+            LIMIT 1
+            FOR UPDATE
+        """), {"id": user_id}).mappings().first()
+
+        if not user_row:
+            db.session.rollback()
+            flash("Credits can only be added to active students.", "danger")
+            return redirect(url_for("admin.users"))
+
+        before_balance = int(user_row["available_credits"] or 0)
+        after_balance = before_balance + credits
+
+        db.session.execute(text("""
+            UPDATE `user`
+            SET available_credits = :after_balance
+            WHERE id = :id
+            LIMIT 1
+        """), {"after_balance": after_balance, "id": user_id})
+
+        db.session.execute(text("""
+            INSERT INTO transactions (
+                teacher_id,
+                type_of_transaction,
+                mode_of_payment,
+                student_id,
+                action_performer_user_id,
+                balance_before_this_transaction,
+                balance_after_this_transaction,
+                amount_added,
+                credits_added,
+                total_available_credits,
+                created_at
+            )
+            VALUES (
+                0,
+                'credit',
+                :mode_of_payment,
+                :student_id,
+                :actor_id,
+                :before_balance,
+                :after_balance,
+                NULL,
+                :credits_added,
+                :total_available_credits,
+                NOW()
+            )
+        """), {
+            "mode_of_payment": mode_of_payment,
+            "student_id": int(user_id),
+            "actor_id": int(current_user.id),
+            "before_balance": before_balance,
+            "after_balance": after_balance,
+            "credits_added": credits,
+            "total_available_credits": after_balance,
+        })
+
+        db.session.commit()
+        flash("Credits added successfully.", "success")
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("[admin.user_add_credits] failed")
+        flash("Could not add credits. Check logs.", "danger")
+
+    return redirect(url_for("admin.users"))
+
+
 @admin_bp.post("/users/create")
 @admin_required
 def user_create():
@@ -2065,7 +2153,7 @@ def inject_admin_message_badge():
 @admin_required
 def students():
     rows = db.session.execute(text("""
-        Select distinct u.id, u.email, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title  from user u
+        Select distinct u.id, u.email, concat(u.first_name,' ', u.last_name) as full_name, u.phone, u.created_at,cl.title, u.available_credits from user u
         left join class_level cl on u.assigned_class_id = cl.id
         inner join (Select * from user_role where is_active=1 and `role`='student' ) ur 
         on ur.user_id=u.id 
@@ -2082,7 +2170,8 @@ def students():
             "full_name": r["full_name"],
             "phone": r["phone"],
             "created_at": r["created_at"],
-            "assigned_class_id": r["title"]
+            "assigned_class_id": r["title"],
+            "available_credits": int(r["available_credits"] or 0)
         }))
 
     return render_template("admin/students.html", title="Students", items=items)
