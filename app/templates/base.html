@@ -58,8 +58,6 @@
             {% if current_user.is_authenticated %}
             <span class="user-pill">
               {{ current_user.full_name }}
-                {% if active_role == 'student' %}
-                      <span class="pill">Available Credits :{{ current_user.available_credits|capitalize }}</span>
                 {% if active_role %}
                       <span class="pill">{{ active_role|capitalize }}</span>
                 {% endif %}
