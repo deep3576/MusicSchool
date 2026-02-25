@@ -1,0 +1,1 @@
+Alter table `user` Add column available_credits int Not NULL DEFAULT 0 After assigned_class_id

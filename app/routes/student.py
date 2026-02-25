@@ -618,7 +618,7 @@ def get_roles_for_user(user_id: int) -> list[str]:
 
 def get_user_by_id(user_id: int):
     row = db.session.execute(text("""
-        SELECT id, email, first_name, last_name, phone
+        SELECT id, email, first_name, last_name, phone,available_credits
         FROM `user`
         WHERE id = :id
         LIMIT 1
@@ -636,6 +636,7 @@ def get_user_by_id(user_id: int):
         first_name=row["first_name"],
         last_name=row["last_name"],
         phone=row["phone"],
+        available_credits=row["available_credits"]
     )
 
 def get_active_role(user):
