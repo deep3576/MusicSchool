@@ -17,6 +17,12 @@ def _ns(d: dict) -> SimpleNamespace:
     return SimpleNamespace(**d)
 
 
+@admin_bp.get("/")
+@login_required
+def admin_home():
+    return redirect(url_for("admin.users"))
+
+
 @admin_bp.get("/messages")
 @admin_required
 def messages():
@@ -1782,14 +1788,6 @@ def users():
         }))
 
     return render_template("admin/users.html", title="Users", items=items)
-
-
-def _ns(d: dict) -> SimpleNamespace:
-    return SimpleNamespace(**d)
-
-
-
-
 @admin_bp.route("/users/<int:user_id>/edit", methods=["GET", "POST"])
 @admin_required
 def user_edit(user_id: int):
