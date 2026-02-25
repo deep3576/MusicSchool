@@ -87,7 +87,8 @@
                     </div>
 
                     <div style="margin-top:14px;">
-                        {% if b.status == 'BOOKED' and  is_past %}
+                        {% if b.status == 'BOOKED' %}
+                        <div class="muted" style="margin-bottom:6px;"><b>Attendance:</b> Mark class status</div>
                         <form method="post" action="{{ url_for('admin.booking_absent', booking_id=b.id) }}"
                               onsubmit="return confirm('No Show of Student?');">
                             <button class="btn secondary" type="submit">Mark Absent of Student</button>
@@ -98,6 +99,8 @@
                               onsubmit="return confirm('Mark Present for Student?');">
                             <button class="btn secondary" type="submit">Mark Present of Student</button>
                         </form>
+                        {% else %}
+                        <div class="muted"><b>Attendance:</b> {{ b.status }}</div>
                         {% endif %}
                     </div>
 
