@@ -44,6 +44,13 @@
             {% endif %}
           </div>
 
+
+
+          {% if b.google_meet_link %}
+          <div class="muted" style="margin-top:8px;">
+            Google Meet: <a href="{{ b.google_meet_link }}" target="_blank" rel="noopener">Join Class</a>
+          </div>
+          {% endif %}
           <div class="muted" style="margin-top:6px; font-size:12px;">
             Booking ID: {{ b.id }} · Created: {{ b.created_at.strftime("%Y-%m-%d %H:%M") }}
           </div>

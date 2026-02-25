@@ -86,7 +86,8 @@ def todaysClasses():
           b.venue_id,
           v.name AS venue_name,
           ta.start_at,
-          ta.end_at
+          ta.end_at,
+          b.google_meet_link
         FROM booking b
         JOIN teacher t ON t.id = b.teacher_id
         JOIN teacher_availability ta ON ta.id = b.availability_id
@@ -113,6 +114,7 @@ def todaysClasses():
                             if r["class_level_id"] else None),
             "venue": (_ns({"id": r["venue_id"], "name": r["venue_name"]})
                       if r["venue_id"] else None),
+            "google_meet_link": r.get("google_meet_link"),
         }))
     print(bookings_list)
 
