@@ -38,6 +38,7 @@
               <th>Email</th>
 
               <th>Assigned Class</th>
+              <th>Credits</th>
               <th>Phone</th>
               <th style="width:120px;">Action</th>
             </tr>
@@ -48,6 +49,7 @@
                 <td style="font-weight:900;">{{ u.full_name }}</td>
                 <td>{{ u.email }}</td>
                 <td>{{ u.assigned_class_id }}</td>
+                <td><span class="pill">{{ u.available_credits }}</span></td>
                 <td>{{ u.phone }}</td>
                 <td>
                   <a class="btn small" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Open Profile</a>

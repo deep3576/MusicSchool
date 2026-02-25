@@ -12,6 +12,7 @@ class AppUser(UserMixin):
     first_name: str | None = None
     last_name: str | None = None
     phone: str | None = None
+    available_credits: int = 0
 
     @property
     def full_name(self) -> str:
@@ -36,7 +37,7 @@ class AppUser(UserMixin):
 def get_user_by_id(user_id: int) -> AppUser | None:
     # ✅ user table WITHOUT role
     row = db.session.execute(text("""
-        SELECT id, email, first_name, last_name, phone
+        SELECT id, email, first_name, last_name, phone, available_credits
         FROM `user`
         WHERE id = :id
         LIMIT 1
@@ -60,6 +61,7 @@ def get_user_by_id(user_id: int) -> AppUser | None:
         first_name=row["first_name"],
         last_name=row["last_name"],
         phone=row["phone"],
+        available_credits=int(row["available_credits"] or 0),
     )
 
 
