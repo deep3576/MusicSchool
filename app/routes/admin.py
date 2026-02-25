@@ -498,6 +498,31 @@ def teacher_update(teacher_id):
 @admin_bp.post("/teachers/<int:teacher_id>/toggle")
 @admin_required
 def teacher_toggle(teacher_id):
+    #Check Status of Other attributes of Teacher
+    from flask import flash
+
+    teacher_attr = db.session.execute(text("""
+        Select t.shift_start_time ,t.shift_end_time , t.break_start_time ,t.break_end_time ,t.default_venue_id  ,tcl.class_level_id 
+        from teacher t
+        left join teacher_class_level tcl
+        on tcl.teacher_id =t.id 
+        WHERE id=:teacher_id
+        """), {"teacher_id": teacher_id}).mappings().first()
+
+    if teacher_attr:
+        # Iterate through the keys (column names) and values
+        for column_name, value in teacher_attr.items():
+            if value is None:
+                # Clean up the column name for the message (e.g., shift_start_time -> Shift Start Time)
+                display_name = column_name.replace('_', ' ').replace('t.','').title()
+                if column_name == 'tcl.class_level_id':
+                    display_name = 'Assigned Classes'
+                flash(f"The {display_name} is missing. Please add teacher details first then activate.", "warning")
+                return redirect(url_for("admin.teachers"))
+    else:
+        flash("Teacher record not found.", "danger")
+        return redirect(url_for("admin.teachers"))
+
     db.session.execute(text("""
         UPDATE teacher
         SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END
@@ -635,7 +660,6 @@ def teacher_edit(teacher_id):
     default_venue_id = request.form.get("default_venue_id")
     default_venue_id = int(default_venue_id) if default_venue_id else None
 
-    is_active = 1 if request.form.get("is_active") == "1" else 0
 
     shift_start_time = request.form.get("shift_start_time") or None
     shift_end_time = request.form.get("shift_end_time") or None
@@ -649,7 +673,6 @@ def teacher_edit(teacher_id):
             email = :email,
             bio = :bio,
             class_duration_min = :duration,
-            is_active = :is_active,
             default_venue_id = :default_venue_id,
             shift_start_time = :shift_start_time,
             shift_end_time = :shift_end_time,
@@ -663,7 +686,6 @@ def teacher_edit(teacher_id):
         "email": email,
         "bio": bio,
         "duration": duration,
-        "is_active": is_active,
         "default_venue_id": default_venue_id,
         "shift_start_time": shift_start_time,
         "shift_end_time": shift_end_time,
@@ -691,7 +713,7 @@ def teacher_edit(teacher_id):
 def teacher_availability(teacher_id):
     teacher = db.session.execute(text("""
         SELECT
-          t.id, t.name, t.class_duration_min, t.default_venue_id,
+          t.id, concat (t.first_name ,' ' ,t.last_name) as name, t.class_duration_min, t.default_venue_id,
           v.name AS default_venue_name
         FROM teacher t
         LEFT JOIN venue v ON v.id = t.default_venue_id
