@@ -243,6 +243,10 @@ def book_submit():
         flash("Please select a slot.", "danger")
         return redirect(url_for("student.book"))
 
+    if not getattr(current_user, "is_student", False):
+        flash("Only students can book classes.", "danger")
+        return redirect(url_for("student.book"))
+
     try:
         # ------------------------------------------------------------
         # A) Booking by specific availability_id (direct)
@@ -338,14 +342,32 @@ def book_submit():
 
 
 
-        row=db.session.execute(text(""" Select assigned_class_id from user where id=:id """),{"id":current_user.id}).mappings().first()
+        row=db.session.execute(text(""" Select assigned_class_id, available_credits from user where id=:id FOR UPDATE """),{"id":current_user.id}).mappings().first()
         assigned_class_id = row["assigned_class_id"] if row else None
+        available_credits = int((row or {}).get("available_credits") or 0)
+        if available_credits < 1:
+            db.session.rollback()
+            flash("You do not have enough credits to book this class.", "warning")
+            return redirect(url_for("student.book"))
 
         # Safety guard: a student must never be booked with themselves as teacher.
         if int(slot["teacher_id"]) == int(current_user.id):
             db.session.rollback()
             flash("Invalid booking: teacher cannot be the current user.", "danger")
             return redirect(url_for("student.book"))
+
+        updated_credits = db.session.execute(text("""
+            UPDATE `user`
+            SET available_credits = available_credits - 1
+            WHERE id = :uid AND available_credits > 0
+        """), {"uid": current_user.id}).rowcount
+
+        if updated_credits != 1:
+            db.session.rollback()
+            flash("You do not have enough credits to book this class.", "warning")
+            return redirect(url_for("student.book"))
+
+        balance_after = available_credits - 1
 
         # Insert booking row
         db.session.execute(text("""
@@ -367,6 +389,64 @@ def book_submit():
             "class_level_id": assigned_class_id,
             "venue_id": slot["venue_id"],
         })
+
+        booking_id = db.session.execute(text("SELECT LAST_INSERT_ID()")).scalar()
+
+        tx_cols = {
+            (r["Field"] or "").lower()
+            for r in db.session.execute(text("SHOW COLUMNS FROM transactions")).mappings().all()
+        }
+
+        tx_params = {
+            "teacher_id": int(slot["teacher_id"] or 0),
+            "student_id": int(current_user.id),
+            "actor_id": int(current_user.id),
+            "before": int(available_credits),
+            "after": int(balance_after),
+            "credits_added": -1,
+            "total": int(balance_after),
+        }
+        tx_columns = [
+            "teacher_id",
+            "type_of_transaction",
+            "mode_of_payment",
+            "student_id",
+            "action_performer_user_id",
+            "balance_before_this_transaction",
+            "balance_after_this_transaction",
+            "amount_added",
+            "credits_added",
+            "total_available_credits",
+            "created_at",
+        ]
+        tx_values = [
+            ":teacher_id",
+            "'debit'",
+            "NULL",
+            ":student_id",
+            ":actor_id",
+            ":before",
+            ":after",
+            "NULL",
+            ":credits_added",
+            ":total",
+            "NOW()",
+        ]
+
+        if "availability_id" in tx_cols:
+            tx_columns.append("availability_id")
+            tx_values.append(":availability_id")
+            tx_params["availability_id"] = int(slot["id"])
+
+        if "booking_id" in tx_cols and booking_id:
+            tx_columns.append("booking_id")
+            tx_values.append(":booking_id")
+            tx_params["booking_id"] = int(booking_id)
+
+        db.session.execute(text(f"""
+            INSERT INTO transactions ({", ".join(tx_columns)})
+            VALUES ({", ".join(tx_values)})
+        """), tx_params)
 
         db.session.commit()
  # Ensure start/end always come from DB slot
@@ -676,7 +756,7 @@ def login():
         email = form.email.data.strip().lower()
 
         row = db.session.execute(text("""
-            SELECT u.id, u.password_hash, u.email, u.first_name, u.last_name, u.phone
+            SELECT u.id, u.password_hash, u.email, u.first_name, u.last_name, u.phone, u.available_credits
             FROM `user` u
             WHERE u.email = :email
             LIMIT 1
@@ -701,6 +781,7 @@ def login():
             first_name=row["first_name"],
             last_name=row["last_name"],
             phone=row["phone"],
+            available_credits=int(row["available_credits"] or 0),
         )
 
         login_user(u)

@@ -75,6 +75,17 @@ background: rgba(255,255,255,.6);
   border-color: rgba(226, 59, 59, .25);
 }
 
+.credits-pill{
+  border-radius:999px;
+  padding:8px 12px;
+  font-weight:900;
+  letter-spacing:.2px;
+  color:#3a2000;
+  border:1px solid rgba(255,170,0,.45);
+  background: linear-gradient(135deg, rgba(255,243,176,.95), rgba(255,210,95,.95));
+  box-shadow: 0 6px 16px rgba(255,170,0,.2);
+}
+
 /* Cards / sections */
 .card{
   background: var(--card);
