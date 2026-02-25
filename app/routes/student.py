@@ -5,6 +5,7 @@ from flask import Blueprint, request, current_app, jsonify, make_response, redir
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from ..emailer import send_email
+from ..create_meeting import create_google_meet
 from ..extensions import db
 from ..forms import SignupForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
 from ..auth_user import AppUser
@@ -277,6 +278,8 @@ def book_submit():
             # Fetch details for booking insert
             slot = db.session.execute(text("""
                 SELECT ta.id, ta.teacher_id,
+                       ta.start_at, ta.end_at,
+                       t.email AS teacher_email,
                        COALESCE(ta.venue_id, t.default_venue_id) AS venue_id
                 FROM teacher_availability ta
                 JOIN teacher t ON t.id = ta.teacher_id
@@ -305,6 +308,7 @@ def book_submit():
             # Pick ONE available slot and lock it (this prevents double-booking)
             slot = db.session.execute(text("""
                 SELECT ta.id, ta.teacher_id,ta.start_at,ta.end_at,
+                       t.email AS teacher_email,
                        COALESCE(ta.venue_id, t.default_venue_id) AS venue_id
                 FROM teacher_availability ta
                 JOIN teacher t ON t.id = ta.teacher_id
@@ -369,17 +373,35 @@ def book_submit():
 
         balance_after = available_credits - 1
 
-        # Insert booking row
-        db.session.execute(text("""
-            INSERT INTO booking
-              (teacher_id, availability_id, user_id,
-               student_name, student_email, student_phone,
-               class_level_id, venue_id, status, created_at,last_update_timestamp,last_update_by)
-            VALUES
-              (:teacher_id, :availability_id, :user_id,
-               :student_name, :student_email, :student_phone,
-               :class_level_id, :venue_id, 'BOOKED', NOW(),NOW(),'System')
-        """), {
+        try:
+            meet_info = create_google_meet(
+                start_time=slot["start_at"],
+                end_time=slot["end_at"],
+                student_email=current_user.email,
+                teacher_email=slot.get("teacher_email"),
+                description=f"Booking for student {current_user.full_name}.",
+            )
+        except Exception:
+            current_app.logger.exception("create_google_meet failed")
+            meet_info = {"meet_link": None, "event_id": None}
+        meet_link = meet_info.get("meet_link")
+
+        booking_cols = {
+            (r["Field"] or "").lower()
+            for r in db.session.execute(text("SHOW COLUMNS FROM booking")).mappings().all()
+        }
+
+        booking_columns = [
+            "teacher_id", "availability_id", "user_id",
+            "student_name", "student_email", "student_phone",
+            "class_level_id", "venue_id", "status", "created_at", "last_update_timestamp", "last_update_by"
+        ]
+        booking_values = [
+            ":teacher_id", ":availability_id", ":user_id",
+            ":student_name", ":student_email", ":student_phone",
+            ":class_level_id", ":venue_id", "'BOOKED'", "NOW()", "NOW()", "'System'"
+        ]
+        booking_params = {
             "teacher_id": slot["teacher_id"],
             "availability_id": slot["id"],
             "user_id": current_user.id,
@@ -388,7 +410,17 @@ def book_submit():
             "student_phone": getattr(current_user, "phone", None),
             "class_level_id": assigned_class_id,
             "venue_id": slot["venue_id"],
-        })
+        }
+
+        if "google_meet_link" in booking_cols:
+            booking_columns.append("google_meet_link")
+            booking_values.append(":google_meet_link")
+            booking_params["google_meet_link"] = meet_link
+
+        db.session.execute(text(f"""
+            INSERT INTO booking ({", ".join(booking_columns)})
+            VALUES ({", ".join(booking_values)})
+        """), booking_params)
 
         booking_id = db.session.execute(text("SELECT LAST_INSERT_ID()")).scalar()
 
@@ -457,6 +489,7 @@ def book_submit():
 
         Start: {start_val}
         End: {end_val}
+        Google Meet: {meet_link or 'Will be shared shortly'}
 
         Regards,
         The Rhythm School
@@ -517,6 +550,14 @@ def book_submit():
                               {end_val}
                             </td>
                           </tr>
+                          <tr>
+                            <td style="padding:12px 14px;background:#f9fafb;width:140px;font-size:13px;font-weight:700;color:#111827;">
+                              Google Meet
+                            </td>
+                            <td style="padding:12px 14px;background:#ffffff;font-size:13px;color:#111827;">
+                              <a href="{meet_link}" target="_blank" rel="noopener">Join Class</a>
+                            </td>
+                          </tr>
                         </table>
 
                         <div style="margin-top:16px;font-size:13px;line-height:1.6;color:#6b7280;">
@@ -556,6 +597,19 @@ def book_submit():
             plain,
             html
         )
+        if slot.get("teacher_email"):
+            send_email(
+                slot["teacher_email"],
+                "New Class Booking - The Rhythm School",
+                plain,
+                html
+            )
+        send_email(
+            "therythmschool@gmail.com",
+            "Booking Notification - The Rhythm School",
+            plain,
+            html
+        )
 
         flash("Booking confirmed!", "success")
         return redirect(url_for("student.my_bookings"))
@@ -577,7 +631,8 @@ def my_bookings():
           concat(t.first_name ,' ',t.last_name) AS teacher_name,
           ta.start_at, ta.end_at,
           cl.code AS class_code, cl.title AS class_title,
-          v.name AS venue_name
+          v.name AS venue_name,
+          b.google_meet_link
         FROM booking b
         JOIN teacher t ON t.id = b.teacher_id
         JOIN teacher_availability ta ON ta.id = b.availability_id
@@ -603,6 +658,7 @@ def my_bookings():
         "end_at": r["end_at"],
         "class_label": (f"{r['class_code']} · {r['class_title']}" if r["class_code"] else None),
         "venue_name": r["venue_name"],
+        "google_meet_link": r.get("google_meet_link"),
     }) for r in rows]
 
     return render_template("my_bookings.html", title="My Bookings", items=items)

@@ -55,6 +55,14 @@
                         {% endif %}
                     </div>
                     <div class="muted" style="margin-top:6px;">
+                        <b>Google Meet:</b>
+                        {% if b.google_meet_link %}
+                        <a href="{{ b.google_meet_link }}" target="_blank" rel="noopener">Join Class</a>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </div>
+                    <div class="muted" style="margin-top:6px;">
                         <b>Class:</b>
                         {% if b.class_level %}
                         {{ b.class_level.code }} · {{ b.class_level.title }}
