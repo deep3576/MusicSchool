@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -8,7 +9,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.musicschool.mobileapp"
+        applicationId = "com.therhythmschool.mobileapp"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -19,9 +20,7 @@ android {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
+    // remove composeOptions.kotlinCompilerExtensionVersion block
 
     kotlinOptions {
         jvmTarget = "17"
