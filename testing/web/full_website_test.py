@@ -14,7 +14,7 @@ Usage example:
       --page-threshold-ms 2500 \
       --api-threshold-ms 1200
 
-Optional credentials for login smoke coverage:
+Optional credentials for login smoke coverage (env vars override defaults in this file):
     TEST_STUDENT_EMAIL / TEST_STUDENT_PASSWORD
     TEST_TEACHER_EMAIL / TEST_TEACHER_PASSWORD
     TEST_ADMIN_EMAIL / TEST_ADMIN_PASSWORD
@@ -26,6 +26,7 @@ import argparse
 import json
 import os
 import statistics
+import sys
 import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -44,6 +45,16 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+
+
+DEFAULT_TEST_CREDS: dict[str, str] = {
+    "TEST_STUDENT_EMAIL": "happybhajistudent@gmail.com",
+    "TEST_STUDENT_PASSWORD": "admin1234",
+    "TEST_TEACHER_EMAIL": "happy1@gmail.com",
+    "TEST_TEACHER_PASSWORD": "admin1234",
+    "TEST_ADMIN_EMAIL": "deep3576@gmail.com",
+    "TEST_ADMIN_PASSWORD": "admin1234",
+}
 
 @dataclass(frozen=True)
 class Credentials:
@@ -167,8 +178,8 @@ class SanityAndMainFlowTests(SeleniumBase):
 
     @staticmethod
     def _read_creds(email_key: str, password_key: str) -> Credentials | None:
-        email = os.getenv(email_key)
-        password = os.getenv(password_key)
+        email = os.getenv(email_key) or DEFAULT_TEST_CREDS.get(email_key)
+        password = os.getenv(password_key) or DEFAULT_TEST_CREDS.get(password_key)
         return Credentials(email, password) if email and password else None
 
     def test_01_sanity_home_page_renders(self) -> None:
@@ -399,7 +410,7 @@ class SecurityTests(HttpMixin, unittest.TestCase):
                 self.assertIn(status, {403, 404, 405, 501})
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args() -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser(description="Run comprehensive MusicSchool web tests.")
     parser.add_argument("--base-url", default="http://127.0.0.1:5000", help="Base URL of running MusicSchool app")
     parser.add_argument("--headed", action="store_true", help="Run browser tests with visible UI")
@@ -410,11 +421,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--api-threshold-ms", type=int, default=1200, help="API performance threshold")
     parser.add_argument("--perf-samples", type=int, default=5, help="Sample count for p95/avg checks")
     parser.add_argument("--chromedriver-path", default=None, help="Optional explicit chromedriver path")
-    return parser.parse_args()
+    return parser.parse_known_args()
 
 
 if __name__ == "__main__":
-    args = parse_args()
+    args, unittest_argv = parse_args()
 
     SeleniumBase.BASE_URL = args.base_url
     SeleniumBase.HEADLESS = True if args.headless else not args.headed
@@ -428,4 +439,4 @@ if __name__ == "__main__":
     PerformanceAndApiTests.API_THRESHOLD_MS = args.api_threshold_ms
     PerformanceAndApiTests.PERF_SAMPLE_COUNT = max(3, args.perf_samples)
 
-    unittest.main(verbosity=2)
+    unittest.main(argv=[sys.argv[0], *unittest_argv], verbosity=2)
