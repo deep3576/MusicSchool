@@ -1,6 +1,8 @@
 # app/__init__.py
 import os
 import configparser
+import importlib
+import importlib.util
 
 from flask import Flask, jsonify, redirect, request, session, url_for
 from flask_login import current_user
@@ -62,6 +64,16 @@ def _get_optional_kingsman_section(cfg: configparser.ConfigParser, primary_secti
         return primary_section
 
     return None
+
+
+def _register_optional_blueprint(app: Flask, module_name: str, blueprint_attr: str):
+    if importlib.util.find_spec(module_name) is None:
+        return
+
+    module = importlib.import_module(module_name)
+    blueprint = getattr(module, blueprint_attr, None)
+    if blueprint is not None:
+        app.register_blueprint(blueprint)
 
 
 def create_app() -> Flask:
@@ -133,6 +145,9 @@ def create_app() -> Flask:
     app.register_blueprint(teacher_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(api_kingsman_bp)
+
+    _register_optional_blueprint(app, "app.routes.kingsman_api", "kingsman_api_bp")
+    _register_optional_blueprint(app, "app.routes.kingsman", "kingsman_bp")
     # Scheduler
     app.config.from_object(Config)
     scheduler.init_app(app)

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign up — Kingsman Renovations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/styles.css" />
+</head>
+<body>
+  <main class="auth-wrap">
+    <section class="auth-card">
+      <h1>Create account</h1>
+      <p class="lead">Set up your Kingsman client account.</p>
+      <form id="signupForm" class="form">
+        <div class="grid2">
+          <input type="text" name="first_name" placeholder="First name *" required />
+          <input type="text" name="last_name" placeholder="Last name *" required />
+        </div>
+        <input type="email" name="email" placeholder="Email *" required />
+        <input type="tel" name="phone" placeholder="Phone" />
+        <input type="password" name="password" placeholder="Password (min 8 chars) *" minlength="8" required />
+        <button type="submit" class="cta">Sign Up</button>
+        <p id="signupMsg" class="form-msg"></p>
+      </form>
+      <p class="muted">Already have an account? <a href="login.html">Log in</a></p>
+      <p><a href="index.html">← Back to home</a></p>
+    </section>
+  </main>
+  <script src="static/js/session.js"></script>
+  <script src="static/js/auth.js"></script>
+</body>
+</html>
