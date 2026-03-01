@@ -43,22 +43,53 @@ def _read_config():
     return cfg, section
 
 
+def _build_mysql_uri(cfg: configparser.ConfigParser, section: str) -> str:
+    host = cfg.get(section, "host")
+    port = cfg.get(section, "port", fallback="3306")
+    user = cfg.get(section, "user")
+    password = cfg.get(section, "password")
+    database = cfg.get(section, "database")
+    charset = cfg.get(section, "charset", fallback="utf8mb4")
+    return f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}?charset={charset}"
+
+
+def _get_optional_kingsman_section(cfg: configparser.ConfigParser, primary_section: str) -> str | None:
+    for section in ("mysql_kingsman", "kingsman_mysql", "kingsman_db"):
+        if cfg.has_section(section):
+            return section
+
+    if cfg.has_option(primary_section, "kingsman_database"):
+        return primary_section
+
+    return None
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
 
     cfg, db_section = _read_config()
     app.config["SECRET_KEY"] = cfg.get("flask", "secret_key", fallback="dev-secret-change-me")
 
-    host = cfg.get(db_section, "host")
-    port = cfg.get(db_section, "port", fallback="3306")
-    user = cfg.get(db_section, "user")
-    password = cfg.get(db_section, "password")
-    database = cfg.get(db_section, "database")
-
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}?charset=utf8mb4"
-    )
+    app.config["SQLALCHEMY_DATABASE_URI"] = _build_mysql_uri(cfg, db_section)
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    app.config["MUSIC_SCHOOL_SCHEMA"] = cfg.get(db_section, "database")
+
+    kingsman_section = _get_optional_kingsman_section(cfg, db_section)
+    if kingsman_section:
+        kingsman_schema = cfg.get(kingsman_section, "kingsman_database", fallback=None)
+        if not kingsman_schema:
+            kingsman_schema = cfg.get(kingsman_section, "database", fallback=None)
+
+        if kingsman_schema:
+            app.config["KINGSMAN_SCHEMA"] = kingsman_schema
+            app.config["SQLALCHEMY_BINDS"] = {
+                "kingsman": _build_mysql_uri(cfg, kingsman_section).replace(
+                    f"/{cfg.get(kingsman_section, 'database', fallback=kingsman_schema)}?",
+                    f"/{kingsman_schema}?",
+                    1,
+                )
+            }
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -95,11 +126,13 @@ def create_app() -> Flask:
     from .routes.admin import admin_bp
     from .routes.teacher import teacher_bp
     from .routes.api import api_bp
+    from .routes.API_kingsman import api_kingsman_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(teacher_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(api_kingsman_bp)
     # Scheduler
     app.config.from_object(Config)
     scheduler.init_app(app)

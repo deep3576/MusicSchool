@@ -45,6 +45,23 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+
+    # Optional Kingsman schema (separate schema/DB with same app runtime)
+    KINGSMAN_HOST = _ini_get("mysql_kingsman", "host", MYSQL_HOST)
+    KINGSMAN_PORT = _ini_getint("mysql_kingsman", "port", MYSQL_PORT)
+    KINGSMAN_USER = _ini_get("mysql_kingsman", "user", MYSQL_USER)
+    KINGSMAN_PASSWORD = _ini_get("mysql_kingsman", "password", MYSQL_PASSWORD)
+    KINGSMAN_DB = _ini_get("mysql_kingsman", "database", "")
+    KINGSMAN_CHARSET = _ini_get("mysql_kingsman", "charset", MYSQL_CHARSET)
+
+    if KINGSMAN_DB:
+        SQLALCHEMY_BINDS = {
+            "kingsman": (
+                f"mysql+pymysql://{KINGSMAN_USER}:{KINGSMAN_PASSWORD}"
+                f"@{KINGSMAN_HOST}:{KINGSMAN_PORT}/{KINGSMAN_DB}?charset={KINGSMAN_CHARSET}"
+            )
+        }
+
     SMTP_HOST = _ini_get("email", "smtp_host", "")
     SMTP_PORT = _ini_getint("email", "smtp_port", 587)
     SMTP_USER = _ini_get("email", "smtp_user", "")
