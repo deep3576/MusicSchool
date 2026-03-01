@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kingsman Renovations — kingsmanrenovations.com</title>
+  <meta name="description" content="Design • Build • Renovate — Quality renovations across the GTA." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/styles.css" />
+  <link rel="icon" href="static/img/favicon.jpg" sizes="32x32">
+</head>
+<body>
+  <header class="nav">
+    <div class="container">
+      <a href="#" class="brand" aria-label="Kingsman Renovations home">
+        <img class="logo" src="static/img/Kingsman_logo.png" alt="Kingsman Renovations logo" />
+        <span class="name">Kingsman Renovations</span>
+      </a>
+      <nav class="menu">
+        <a href="#services">Services</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+        <a href="login.html" class="login-link">Log in</a>
+        <a href="signup.html" class="login-link">Sign up</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero hero-banner" style="--hero-img: url('/frontend/static/img/hero-1.jpg')">
+    <div class="hero-overlay" aria-hidden="true"></div>
+    <div class="container hero-center">
+      <h1 class="hero-title">Design • Build • Renovate</h1>
+      <p class="hero-sub">Quality renovations across the GTA.</p>
+      <p id="apiStatus" class="muted">Checking API status…</p>
+      <div class="hero-actions">
+        <a href="#services" class="btn btn-light">OUR SERVICES</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="services" class="section">
+    <div class="container">
+      <h2>Our Services</h2>
+      <div class="cards" id="serviceList">
+        <article class="card">
+          <img src="static/img/card-adu.jpg" alt="Additions & ADUs" />
+          <h3>Additions & ADUs</h3>
+          <p>From concept to permit to build — we expand spaces that feel like home.</p>
+        </article>
+        <article class="card">
+          <img src="static/img/card-permits.jpg" alt="Permits" />
+          <h3>Permits & Drawings</h3>
+          <p>Ontario-compliant drawings and permit support to keep projects moving.</p>
+        </article>
+        <article class="card">
+          <img src="static/img/card-entrance.jpg" alt="Interiors" />
+          <h3>Kitchens • Baths • Basements</h3>
+          <p>Transformative interior work with durable materials and clean finishes.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="section alt">
+    <div class="container grid2">
+      <div>
+        <h2>About Us</h2>
+        <p>We are <strong>Kingsman Renovations Construction Inc.</strong>, proudly serving Ontario homeowners with transparent quotes, reliable timelines, and meticulous workmanship.</p>
+        <ul class="ticks">
+          <li>Licensed & insured</li>
+          <li>Permit-ready drawings</li>
+          <li>Dedicated project manager</li>
+        </ul>
+      </div>
+      <div>
+        <img src="static/img/hero-2.jpg" alt="Before & After" class="rounded" />
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="section">
+    <div class="container">
+      <h2>Request a Quote</h2>
+      <form id="contactForm" class="form">
+        <div class="grid2">
+          <input type="text" name="name" placeholder="Your name *" required />
+          <input type="email" name="email" placeholder="Email *" required />
+        </div>
+        <div class="grid2">
+          <input type="tel" name="phone" placeholder="Phone" />
+          <input type="text" name="subject" placeholder="Project type (e.g., Kitchen)" />
+        </div>
+        <textarea name="message" rows="5" placeholder="Tell us about your project *" required></textarea>
+        <button type="submit" class="cta">Send</button>
+        <p id="formMsg" class="form-msg" role="status"></p>
+      </form>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>© <span id="year"></span> Kingsman Renovations Construction Inc. · All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="static/js/session.js"></script>
+  <script src="static/js/main.js"></script>
+</body>
+</html>

@@ -9,11 +9,36 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="updating Teacher Portal in Admin">
-      <change afterPath="$PROJECT_DIR$/app/create_meeting.py" afterDir="false" />
+    <list default="true" id="20676fcd-e0dd-4f9f-93a0-9a78ad05d575" name="Changes" comment="updating Adding google Calender Events and user_edit update">
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/backend/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/backend/api/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/backend/api/routes.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/backend/run.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/db.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/admin-portal.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/index.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/login.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/portal.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/signup.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/css/styles.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/Kingsman_logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/android-chrome-192.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/android-chrome-512.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/apple-touch-icon-180.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/card-adu.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/card-entrance.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/card-permits.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/favicon-16.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/favicon-32.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/favicon.ico" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/hero-1.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/img/hero-2.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/js/admin-portal.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/js/auth.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/js/main.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/js/portal.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Kingsman_construction_files/frontend/static/js/session.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/routes/student.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/student.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,6 +81,13 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python tests.Python tests for full_website_test.PerformanceAndApiTests.executor": "Run",
+    "Python tests.Python tests for full_website_test.PerformanceAndApiTests.test_11_performance_api_health_budget.executor": "Run",
+    "Python tests.Python tests for full_website_test.PerformanceAndApiTests.test_14_regression_unauthorized_apis_return_401_quickly.executor": "Run",
+    "Python tests.Python tests for full_website_test.SanityAndMainFlowTests.executor": "Run",
+    "Python tests.Python tests for full_website_test.SanityAndMainFlowTests.test_07_regression_role_login_smoke_student.executor": "Run",
+    "Python tests.Python tests for full_website_test.SeleniumBase.executor": "Run",
+    "Python tests.Python tests in full_website_test.py.executor": "Run",
     "Python.admin.executor": "Run",
     "Python.check_db.executor": "Run",
     "Python.create_meeting.executor": "Run",
@@ -68,13 +100,15 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "master",
-    "last_opened_file_path": "/Users/inderdeepsingh/PycharmProjects/MusicSchool/app/templates/teacher",
+    "last_opened_file_path": "/Users/inderdeepsingh/PycharmProjects/MusicSchool/Kingsman_construction_files",
     "run.code.analysis.last.selected.profile": "pProject Default",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Kingsman_construction_files" />
+      <recent name="$PROJECT_DIR$/instance/API" />
       <recent name="$PROJECT_DIR$/app/templates/teacher" />
       <recent name="$PROJECT_DIR$/app/static/img" />
     </key>
@@ -83,31 +117,88 @@
     </key>
   </component>
   <component name="RunManager">
-    <configuration name="student" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="Python tests for full_website_test.PerformanceAndApiTests" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
       <module name="TheSpiritSchool" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/app/routes" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testing/web" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/app/routes/student.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;full_website_test.PerformanceAndApiTests&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Python tests for full_website_test.PerformanceAndApiTests.test_11_performance_api_health_budget" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+      <module name="TheSpiritSchool" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testing/web" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;full_website_test.PerformanceAndApiTests.test_11_performance_api_health_budget&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Python tests for full_website_test.PerformanceAndApiTests.test_14_regression_unauthorized_apis_return_401_quickly" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+      <module name="TheSpiritSchool" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testing/web" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;full_website_test.PerformanceAndApiTests.test_14_regression_unauthorized_apis_return_401_quickly&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Python tests for full_website_test.SanityAndMainFlowTests" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+      <module name="TheSpiritSchool" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testing/web" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;full_website_test.SanityAndMainFlowTests&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Python tests for full_website_test.SanityAndMainFlowTests.test_07_regression_role_login_smoke_student" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+      <module name="TheSpiritSchool" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/testing/web" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;full_website_test.SanityAndMainFlowTests.test_07_regression_role_login_smoke_student&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
       <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.student" />
+        <item itemvalue="Python tests.Python tests for full_website_test.SanityAndMainFlowTests.test_07_regression_role_login_smoke_student" />
+        <item itemvalue="Python tests.Python tests for full_website_test.PerformanceAndApiTests" />
+        <item itemvalue="Python tests.Python tests for full_website_test.SanityAndMainFlowTests" />
+        <item itemvalue="Python tests.Python tests for full_website_test.PerformanceAndApiTests.test_14_regression_unauthorized_apis_return_401_quickly" />
+        <item itemvalue="Python tests.Python tests for full_website_test.PerformanceAndApiTests.test_11_performance_api_health_budget" />
       </list>
     </recent_temporary>
   </component>
@@ -342,7 +433,47 @@
       <option name="project" value="LOCAL" />
       <updated>1771994187646</updated>
     </task>
-    <option name="localTasksCounter" value="28" />
+    <task id="LOCAL-00028" summary="updating Adding google Calender Events">
+      <option name="closed" value="true" />
+      <created>1771996609411</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1771996609411</updated>
+    </task>
+    <task id="LOCAL-00029" summary="updating Adding google Calender Events">
+      <option name="closed" value="true" />
+      <created>1772027486898</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1772027486898</updated>
+    </task>
+    <task id="LOCAL-00030" summary="updating Adding google Calender Events">
+      <option name="closed" value="true" />
+      <created>1772028022566</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1772028022566</updated>
+    </task>
+    <task id="LOCAL-00031" summary="updating Adding google Calender Events and user_edit update">
+      <option name="closed" value="true" />
+      <created>1772031061692</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1772031061692</updated>
+    </task>
+    <task id="LOCAL-00032" summary="updating Adding google Calender Events and user_edit update">
+      <option name="closed" value="true" />
+      <created>1772071450883</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1772071450883</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -372,6 +503,8 @@
     <MESSAGE value="Update teacher Portal" />
     <MESSAGE value="Adding credit system." />
     <MESSAGE value="updating Teacher Portal in Admin" />
-    <option name="LAST_COMMIT_MESSAGE" value="updating Teacher Portal in Admin" />
+    <MESSAGE value="updating Adding google Calender Events" />
+    <MESSAGE value="updating Adding google Calender Events and user_edit update" />
+    <option name="LAST_COMMIT_MESSAGE" value="updating Adding google Calender Events and user_edit update" />
   </component>
 </project>

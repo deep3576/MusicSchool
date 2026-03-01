@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Portal — Kingsman Renovations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/styles.css" />
+</head>
+<body>
+  <main class="auth-wrap" style="max-width:1100px;padding:24px 16px;">
+    <section class="auth-card" style="max-width:none; width:100%;">
+      <h1>Admin Portal</h1>
+      <p id="portalWelcome" class="lead">Loading account…</p>
+
+      <div class="cards" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:14px;">
+        <article class="card"><h3>Messages</h3><p id="mMessages">0</p></article>
+        <article class="card"><h3>Users</h3><p id="mUsers">0</p></article>
+        <article class="card"><h3>Open Jobs</h3><p id="mOpenJobs">0</p></article>
+        <article class="card"><h3>Active Employees</h3><p id="mEmployees">0</p></article>
+      </div>
+
+      <div class="card" style="overflow:auto;">
+        <table class="table">
+          <thead><tr><th>Job #</th><th>Title</th><th>Client</th><th>Status</th><th>Updated</th></tr></thead>
+          <tbody id="portalJobsBody">
+            <tr><td colspan="5">Loading jobs…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p id="portalMsg" class="form-msg"></p>
+      <p><a href="index.html">← Back to home</a> · <a href="#" id="logoutBtn">Log out</a></p>
+    </section>
+  </main>
+  <script src="static/js/session.js"></script>
+  <script src="static/js/admin-portal.js"></script>
+</body>
+</html>
