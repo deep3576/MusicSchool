@@ -138,11 +138,13 @@ def create_app() -> Flask:
     from .routes.admin import admin_bp
     from .routes.teacher import teacher_bp
     from .routes.api import api_bp
+    from .routes.API_kingsman import api_kingsman_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(teacher_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(api_kingsman_bp)
 
     _register_optional_blueprint(app, "app.routes.kingsman_api", "kingsman_api_bp")
     _register_optional_blueprint(app, "app.routes.kingsman", "kingsman_bp")
