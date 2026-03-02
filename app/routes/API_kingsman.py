@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 from functools import wraps
+from urllib.parse import urlsplit
 
 from flask import Blueprint, current_app, jsonify, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
@@ -28,6 +29,9 @@ def _use_kingsman_schema():
         return jsonify({"ok": False, "error": "Kingsman schema is not configured"}), 503
 
     db.session.execute(text("USE `{}`".format(schema.replace("`", ""))))
+
+    if request.method == "OPTIONS":
+        return ("", 204)
 
 
 @api_kingsman_bp.teardown_request
@@ -81,6 +85,44 @@ def _parse_iso_datetime(value: str):
 
 def _serializer():
     return URLSafeTimedSerializer(current_app.config.get("SECRET_KEY", "dev-secret-change-me"))
+
+
+def _normalize_origin(origin: str) -> str:
+    parsed = urlsplit((origin or "").strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return ""
+    return f"{parsed.scheme}://{parsed.netloc}".lower()
+
+
+def _allowed_cors_origins() -> set[str]:
+    configured = current_app.config.get("KINGSMAN_CORS_ORIGINS", "")
+    if isinstance(configured, str):
+        configured_items = [o.strip() for o in configured.split(",")]
+    else:
+        configured_items = list(configured or [])
+
+    return {origin for item in configured_items if (origin := _normalize_origin(item))}
+
+
+def _cors_origin_for_request() -> str | None:
+    origin = _normalize_origin(request.headers.get("Origin", ""))
+    if not origin:
+        return None
+
+    allowed = _allowed_cors_origins()
+    return origin if origin in allowed else None
+
+
+@api_kingsman_bp.after_request
+def _add_kingsman_cors_headers(response):
+    origin = _cors_origin_for_request()
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+        response.headers["Vary"] = "Origin"
+    return response
 
 
 def _roles_for_user(user_id: int) -> list[str]:
