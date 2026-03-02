@@ -45,14 +45,17 @@ def _read_config():
     return cfg, section
 
 
-def _build_mysql_uri(cfg: configparser.ConfigParser, section: str) -> str:
+def _build_mysql_uri_with_database(cfg: configparser.ConfigParser, section: str, database: str) -> str:
     host = cfg.get(section, "host")
     port = cfg.get(section, "port", fallback="3306")
     user = cfg.get(section, "user")
     password = cfg.get(section, "password")
-    database = cfg.get(section, "database")
     charset = cfg.get(section, "charset", fallback="utf8mb4")
     return f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}?charset={charset}"
+
+
+def _build_mysql_uri(cfg: configparser.ConfigParser, section: str) -> str:
+    return _build_mysql_uri_with_database(cfg, section, cfg.get(section, "database"))
 
 
 def _get_optional_kingsman_section(cfg: configparser.ConfigParser, primary_section: str) -> str | None:
@@ -96,12 +99,14 @@ def create_app() -> Flask:
         if kingsman_schema:
             app.config["KINGSMAN_SCHEMA"] = kingsman_schema
             app.config["SQLALCHEMY_BINDS"] = {
-                "kingsman": _build_mysql_uri(cfg, kingsman_section).replace(
-                    f"/{cfg.get(kingsman_section, 'database', fallback=kingsman_schema)}?",
-                    f"/{kingsman_schema}?",
-                    1,
-                )
+                "kingsman": _build_mysql_uri_with_database(cfg, kingsman_section, kingsman_schema)
             }
+
+        app.config["KINGSMAN_CORS_ORIGINS"] = cfg.get(
+            kingsman_section,
+            "cors_origins",
+            fallback="",
+        )
 
     db.init_app(app)
     login_manager.init_app(app)
