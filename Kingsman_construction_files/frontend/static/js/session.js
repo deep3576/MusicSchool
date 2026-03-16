@@ -1,5 +1,5 @@
 window.KingsmanApi = (() => {
-  const API_BASE = (window.CONSTRUCTION_API_BASE || "http://localhost:8000/api/kingsman/v1").replace(/\/$/, "");
+  const API_BASE = (window.CONSTRUCTION_API_BASE || "http://localhost:5000/api/kingsman/v1").replace(/\/$/, "");
 
   function getToken() {
     return localStorage.getItem("kingsman_token") || "";
