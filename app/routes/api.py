@@ -1312,7 +1312,11 @@ def admin_teacher_hiring_exam_upsert():
     title = (data.get("title") or "Teacher Hiring Assessment").strip()
     description = (data.get("description") or "").strip()
     instructions = (data.get("instructions") or "").strip()
-    duration_min = int(data.get("duration_min") or 45)
+    raw_duration_min = data.get("duration_min")
+    try:
+        duration_min = int(raw_duration_min or 45)
+    except (TypeError, ValueError):
+        return _json_error("duration_min must be a number", 422)
     questions = _normalize_exam_questions(data.get("questions"))
 
     if not questions:
@@ -1372,7 +1376,11 @@ def public_teacher_hiring_exam_get():
 def public_teacher_hiring_exam_submit():
     data = _parse_json()
 
-    exam_id = int(data.get("exam_id") or 0)
+    try:
+        exam_id = int(data.get("exam_id") or 0)
+    except (TypeError, ValueError):
+        return _json_error("exam_id must be a number", 422)
+
     full_name = (data.get("full_name") or "").strip()
     email = (data.get("email") or "").strip().lower()
     phone = (data.get("phone") or "").strip()
@@ -1380,6 +1388,9 @@ def public_teacher_hiring_exam_submit():
 
     if not exam_id or not full_name or not email:
         return _json_error("exam_id, full_name and email are required", 422)
+
+    if "@" not in email or "." not in email.split("@")[-1]:
+        return _json_error("email must be valid", 422)
 
     if not isinstance(answers, dict) or not answers:
         return _json_error("answers must be a non-empty object", 422)
@@ -1394,22 +1405,35 @@ def public_teacher_hiring_exam_submit():
     if not exam:
         return _json_error("Exam is not active or does not exist", 404)
 
+    linked_user_id = db.session.execute(text("""
+        SELECT id
+        FROM user
+        WHERE email = :email
+        LIMIT 1
+    """), {"email": email}).scalar()
+
     db.session.execute(text("""
         INSERT INTO teacher_hiring_exam_attempt
-          (exam_id, full_name, email, phone, answers_json, submitted_at, status)
+          (exam_id, full_name, email, phone, answers_json, existing_user_id, submitted_at, status)
         VALUES
-          (:exam_id, :full_name, :email, :phone, :answers_json, NOW(), 'SUBMITTED')
+          (:exam_id, :full_name, :email, :phone, :answers_json, :existing_user_id, NOW(), 'SUBMITTED')
     """), {
         "exam_id": exam_id,
         "full_name": full_name,
         "email": email,
         "phone": phone or None,
         "answers_json": answers,
+        "existing_user_id": int(linked_user_id) if linked_user_id else None,
     })
     attempt_id = int(db.session.execute(text("SELECT LAST_INSERT_ID()")).scalar())
     db.session.commit()
 
-    return jsonify({"ok": True, "attempt_id": attempt_id, "message": "Exam submitted successfully"}), 201
+    return jsonify({
+        "ok": True,
+        "attempt_id": attempt_id,
+        "linked_existing_user": bool(linked_user_id),
+        "message": "Exam submitted successfully",
+    }), 201
 
 @api_bp.get("/teacher/students/<int:student_id>/certificates")
 @_require_role("teacher")

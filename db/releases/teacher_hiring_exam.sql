@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS teacher_hiring_exam_attempt (
   full_name VARCHAR(160) NOT NULL,
   email VARCHAR(255) NOT NULL,
   phone VARCHAR(60) NULL,
+  existing_user_id INT NULL,
   answers_json JSON NOT NULL,
   submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   score DECIMAL(5,2) NULL,
@@ -28,7 +29,11 @@ CREATE TABLE IF NOT EXISTS teacher_hiring_exam_attempt (
   review_notes TEXT NULL,
   INDEX idx_teacher_exam_attempt_exam (exam_id),
   INDEX idx_teacher_exam_attempt_email (email),
+  INDEX idx_teacher_exam_attempt_existing_user (existing_user_id),
   CONSTRAINT fk_teacher_hiring_exam_attempt_exam
     FOREIGN KEY (exam_id) REFERENCES teacher_hiring_exam(id)
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+  CONSTRAINT fk_teacher_hiring_exam_attempt_existing_user
+    FOREIGN KEY (existing_user_id) REFERENCES user(id)
+    ON DELETE SET NULL
 );
