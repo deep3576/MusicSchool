@@ -67,6 +67,28 @@
   </div>
 </section>
 
+
+<section class="section">
+  <div class="card callout hiring-callout">
+    <div>
+      <h3 style="margin:0;">We Are Hiring Teachers</h3>
+      <p class="muted" style="margin:8px 0 0;">Take our teacher eligibility exam (configured by admin) and apply online.</p>
+    </div>
+    <a class="btn" href="{{ url_for('student.teacher_exam') }}">Apply / Take Exam</a>
+  </div>
+</section>
+
+<div id="teacher-hiring-popup" class="hiring-popup" role="dialog" aria-modal="true" aria-labelledby="hire-title" aria-hidden="true">
+  <div class="hiring-popup-card">
+    <h3 id="hire-title">Hiring Alert: Teachers Needed</h3>
+    <p class="muted">You can now take the teacher exam online. Click below to start.</p>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <a class="btn" href="{{ url_for('student.teacher_exam') }}">Take Exam</a>
+      <button class="btn secondary" type="button" id="dismiss-hiring-popup">Close</button>
+    </div>
+  </div>
+</div>
+
 <section class="section">
   <div class="section-head">
     <h2>School Moments</h2>
@@ -112,5 +134,25 @@
     <a class="btn" href="{{ url_for('student.book') }}">Book a Class</a>
   </div>
 </section>
+
+<script>
+(() => {
+  const popup = document.getElementById('teacher-hiring-popup');
+  const closeBtn = document.getElementById('dismiss-hiring-popup');
+  if (!popup || !closeBtn) return;
+
+  const key = 'teacher_hiring_popup_closed';
+  if (sessionStorage.getItem(key) !== '1') {
+    popup.classList.add('show');
+    popup.setAttribute('aria-hidden', 'false');
+  }
+
+  closeBtn.addEventListener('click', () => {
+    popup.classList.remove('show');
+    popup.setAttribute('aria-hidden', 'true');
+    sessionStorage.setItem(key, '1');
+  });
+})();
+</script>
 
 {% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <h2>We Are Hiring Teachers</h2>
+    <p class="muted">Submit this short assessment. Admin sets and updates this exam from the backend API.</p>
+  </div>
+
+  <div class="card" style="max-width:900px; margin:0 auto;">
+    <div id="exam-status" class="muted">Loading latest exam...</div>
+
+    <form id="teacher-exam-form" style="display:none; margin-top:16px;">
+      <div class="grid2" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <label class="muted">Full name</label>
+          <input class="input" type="text" id="full_name" required />
+        </div>
+        <div>
+          <label class="muted">Email</label>
+          <input class="input" type="email" id="email" required />
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label class="muted">Phone (optional)</label>
+        <input class="input" type="text" id="phone" />
+      </div>
+
+      <hr style="margin:18px 0; border-color:var(--border);" />
+      <div id="exam-questions"></div>
+
+      <div style="margin-top:16px; display:flex; gap:8px; align-items:center;">
+        <button class="btn" type="submit">Submit Exam</button>
+        <span id="submit-status" class="muted"></span>
+      </div>
+    </form>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const statusEl = document.getElementById('exam-status');
+  const formEl = document.getElementById('teacher-exam-form');
+  const questionsEl = document.getElementById('exam-questions');
+  const submitStatusEl = document.getElementById('submit-status');
+  let exam = null;
+
+  function esc(v) {
+    return (v || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[s]));
+  }
+
+  async function loadExam() {
+    try {
+      const res = await fetch('/api/v1/public/teacher-hiring-exam');
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load exam');
+      exam = data.exam;
+
+      statusEl.innerHTML = `<h3 style="margin:0;">${esc(exam.title)}</h3>
+        <p class="muted" style="margin-top:8px;">${esc(exam.description || '')}</p>
+        <p class="muted">Duration: ${Number(exam.duration_min || 45)} minutes</p>`;
+
+      questionsEl.innerHTML = '';
+      (exam.questions || []).forEach((q, index) => {
+        const options = (q.options || []).map((opt, i) => `
+          <label style="display:block; margin:6px 0;">
+            <input type="radio" name="q_${q.id}" value="${esc(opt)}" ${i === 0 ? '' : ''} ${q.required ? 'required' : ''}>
+            ${esc(opt)}
+          </label>
+        `).join('');
+
+        questionsEl.innerHTML += `
+          <div class="card" style="margin-bottom:12px;">
+            <div style="font-weight:600;">Q${index + 1}. ${esc(q.prompt)}</div>
+            <div style="margin-top:8px;">${options}</div>
+          </div>
+        `;
+      });
+
+      formEl.style.display = 'block';
+    } catch (err) {
+      statusEl.textContent = err.message || 'Error loading exam';
+    }
+  }
+
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!exam) return;
+
+    const answers = {};
+    (exam.questions || []).forEach((q) => {
+      const checked = formEl.querySelector(`input[name="q_${q.id}"]:checked`);
+      if (checked) answers[String(q.id)] = checked.value;
+    });
+
+    const payload = {
+      exam_id: exam.id,
+      full_name: document.getElementById('full_name').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      answers,
+    };
+
+    submitStatusEl.textContent = 'Submitting...';
+    try {
+      const res = await fetch('/api/v1/public/teacher-hiring-exam/attempts', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Submission failed');
+      submitStatusEl.textContent = 'Submitted successfully. Our team will contact you.';
+      formEl.reset();
+    } catch (err) {
+      submitStatusEl.textContent = err.message || 'Submission failed';
+    }
+  });
+
+  loadExam();
+})();
+</script>
+{% endblock %}

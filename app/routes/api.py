@@ -1242,6 +1242,175 @@ def _student_certificate_dir(student_id: int) -> Path:
     return path
 
 
+
+
+def _normalize_exam_questions(questions_raw):
+    if not isinstance(questions_raw, list):
+        return None
+
+    normalized = []
+    for idx, q in enumerate(questions_raw, start=1):
+        if not isinstance(q, dict):
+            return None
+
+        prompt = (q.get("prompt") or "").strip()
+        options = q.get("options") or []
+        question_type = (q.get("type") or "single_choice").strip().lower()
+
+        if not prompt or not isinstance(options, list) or len(options) < 2:
+            return None
+
+        clean_options = [str(opt).strip() for opt in options if str(opt).strip()]
+        if len(clean_options) < 2:
+            return None
+
+        normalized.append({
+            "id": int(q.get("id") or idx),
+            "type": question_type,
+            "prompt": prompt,
+            "options": clean_options,
+            "required": bool(q.get("required", True)),
+        })
+
+    return normalized if normalized else None
+
+
+@api_bp.get("/admin/teacher-hiring-exam")
+@_require_role("admin")
+def admin_teacher_hiring_exam_get():
+    row = db.session.execute(text("""
+        SELECT id, title, description, instructions, duration_min, questions_json, is_active, created_at, updated_at
+        FROM teacher_hiring_exam
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+    """)).mappings().first()
+
+    if not row:
+        return jsonify({"ok": True, "exam": None})
+
+    return jsonify({
+        "ok": True,
+        "exam": {
+            "id": int(row["id"]),
+            "title": row["title"],
+            "description": row["description"],
+            "instructions": row["instructions"],
+            "duration_min": int(row["duration_min"] or 45),
+            "questions": row["questions_json"] or [],
+            "is_active": bool(row["is_active"]),
+            "created_at": _to_iso(row["created_at"]),
+            "updated_at": _to_iso(row["updated_at"]),
+        },
+    })
+
+
+@api_bp.post("/admin/teacher-hiring-exam")
+@_require_role("admin")
+def admin_teacher_hiring_exam_upsert():
+    data = _parse_json()
+    title = (data.get("title") or "Teacher Hiring Assessment").strip()
+    description = (data.get("description") or "").strip()
+    instructions = (data.get("instructions") or "").strip()
+    duration_min = int(data.get("duration_min") or 45)
+    questions = _normalize_exam_questions(data.get("questions"))
+
+    if not questions:
+        return _json_error("questions must be a list with at least one valid question", 422)
+
+    if duration_min < 5 or duration_min > 300:
+        return _json_error("duration_min must be between 5 and 300", 422)
+
+    db.session.execute(text("UPDATE teacher_hiring_exam SET is_active = 0 WHERE is_active = 1"))
+
+    db.session.execute(text("""
+        INSERT INTO teacher_hiring_exam
+          (title, description, instructions, duration_min, questions_json, is_active, created_by_user_id, created_at, updated_at)
+        VALUES
+          (:title, :description, :instructions, :duration_min, :questions_json, 1, :created_by_user_id, NOW(), NOW())
+    """), {
+        "title": title,
+        "description": description or None,
+        "instructions": instructions or None,
+        "duration_min": duration_min,
+        "questions_json": questions,
+        "created_by_user_id": current_user.id,
+    })
+    exam_id = int(db.session.execute(text("SELECT LAST_INSERT_ID()")).scalar())
+    db.session.commit()
+
+    return jsonify({"ok": True, "exam_id": exam_id}), 201
+
+
+@api_bp.get("/public/teacher-hiring-exam")
+def public_teacher_hiring_exam_get():
+    row = db.session.execute(text("""
+        SELECT id, title, description, instructions, duration_min, questions_json
+        FROM teacher_hiring_exam
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+    """)).mappings().first()
+
+    if not row:
+        return _json_error("No active teacher hiring exam found", 404)
+
+    return jsonify({
+        "ok": True,
+        "exam": {
+            "id": int(row["id"]),
+            "title": row["title"],
+            "description": row["description"],
+            "instructions": row["instructions"],
+            "duration_min": int(row["duration_min"] or 45),
+            "questions": row["questions_json"] or [],
+        },
+    })
+
+
+@api_bp.post("/public/teacher-hiring-exam/attempts")
+def public_teacher_hiring_exam_submit():
+    data = _parse_json()
+
+    exam_id = int(data.get("exam_id") or 0)
+    full_name = (data.get("full_name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    phone = (data.get("phone") or "").strip()
+    answers = data.get("answers") or {}
+
+    if not exam_id or not full_name or not email:
+        return _json_error("exam_id, full_name and email are required", 422)
+
+    if not isinstance(answers, dict) or not answers:
+        return _json_error("answers must be a non-empty object", 422)
+
+    exam = db.session.execute(text("""
+        SELECT id
+        FROM teacher_hiring_exam
+        WHERE id = :exam_id AND is_active = 1
+        LIMIT 1
+    """), {"exam_id": exam_id}).mappings().first()
+
+    if not exam:
+        return _json_error("Exam is not active or does not exist", 404)
+
+    db.session.execute(text("""
+        INSERT INTO teacher_hiring_exam_attempt
+          (exam_id, full_name, email, phone, answers_json, submitted_at, status)
+        VALUES
+          (:exam_id, :full_name, :email, :phone, :answers_json, NOW(), 'SUBMITTED')
+    """), {
+        "exam_id": exam_id,
+        "full_name": full_name,
+        "email": email,
+        "phone": phone or None,
+        "answers_json": answers,
+    })
+    attempt_id = int(db.session.execute(text("SELECT LAST_INSERT_ID()")).scalar())
+    db.session.commit()
+
+    return jsonify({"ok": True, "attempt_id": attempt_id, "message": "Exam submitted successfully"}), 201
+
 @api_bp.get("/teacher/students/<int:student_id>/certificates")
 @_require_role("teacher")
 def teacher_student_certificates(student_id: int):
