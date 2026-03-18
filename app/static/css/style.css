@@ -503,3 +503,31 @@ select.input:-webkit-autofill:focus {
   .brand-mark img{ padding: 6px; }
 }
 
+
+.hiring-callout {
+  border: 1px solid rgba(224,181,86,.35);
+}
+
+.hiring-popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
+
+.hiring-popup.show {
+  display: flex;
+}
+
+.hiring-popup-card {
+  width: min(520px, 100%);
+  background: #10141a;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 18px 48px rgba(0,0,0,.35);
+}
