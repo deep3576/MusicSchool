@@ -1685,7 +1685,7 @@ def public_teacher_hiring_exam_submit():
         "full_name": full_name,
         "email": email,
         "phone": phone or None,
-        "answers_json": answers,
+        "answers_json": json.dumps(answers),
         "existing_user_id": int(linked_user_id) if linked_user_id else None,
         "payment_session_id": payment_session_id,
     })
