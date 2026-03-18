@@ -259,6 +259,14 @@ def reply_message(msg_id):
 
 
 
+
+
+@admin_bp.get("/hiring-exam")
+@admin_required
+def hiring_exam():
+    return render_template("admin/hiring_exam.html", title="Hiring Exam Setup")
+
+
 @admin_bp.get("/login")
 def login():
     # Admin login is the same as normal login
