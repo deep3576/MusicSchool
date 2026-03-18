@@ -3,10 +3,8 @@
 <section class="section">
   <div class="section-head">
     <h2>Teacher Hiring Exam Setup</h2>
-    <p class="muted">Create/update the exam JSON that applicants see after paying the $5 Stripe application fee.</p>
+    <p class="muted">Create/update the exam JSON that applicants see after paying the $5 Stripe application fee. You can now define MCQ and audio-input questions.</p>
   </div>
-
-
 
   <div class="card admin-nav" style="margin-top:14px; margin-bottom:14px;">
     <a href="{{ url_for('admin.messages') }}">Messages</a>
@@ -45,7 +43,10 @@
       <hr style="margin:18px 0; border-color:var(--border);" />
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <h3 style="margin:0;">Questions</h3>
+        <div>
+          <h3 style="margin:0;">Questions</h3>
+          <p class="muted" style="margin:4px 0 0;">Choose the expected answer type per question: MCQ or Audio Input.</p>
+        </div>
         <button type="button" class="btn secondary" id="add-question">+ Add Question</button>
       </div>
 
@@ -74,10 +75,23 @@
     return String(v || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[s]));
   }
 
+  function refreshQuestionTypeUI(card) {
+    const type = card.querySelector('.question-type').value;
+    const optionsWrap = card.querySelector('.options-wrap');
+    const audioHelp = card.querySelector('.audio-help');
+    const addOptionBtn = card.querySelector('.add-option');
+
+    const isMcq = type === 'single_choice';
+    optionsWrap.style.display = isMcq ? 'block' : 'none';
+    addOptionBtn.style.display = isMcq ? 'inline-flex' : 'none';
+    audioHelp.style.display = isMcq ? 'none' : 'block';
+  }
+
   function addQuestionCard(question = null) {
     questionCounter += 1;
     const qid = question?.id || questionCounter;
     const prompt = question?.prompt || '';
+    const type = question?.type || 'single_choice';
     const options = Array.isArray(question?.options) && question.options.length ? question.options : ['', ''];
     const required = question?.required !== false;
 
@@ -91,10 +105,17 @@
     `).join('');
 
     card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
-        <div style="flex:1;">
+      <div style="display:grid; grid-template-columns:minmax(0, 1fr) 180px 120px auto; gap:8px; align-items:start;">
+        <div>
           <label class="muted">Question Prompt</label>
           <input class="input question-prompt" type="text" value="${esc(prompt)}" required />
+        </div>
+        <div>
+          <label class="muted">Answer Type</label>
+          <select class="input question-type">
+            <option value="single_choice" ${type === 'single_choice' ? 'selected' : ''}>MCQ</option>
+            <option value="audio_input" ${type === 'audio_input' ? 'selected' : ''}>Audio Input</option>
+          </select>
         </div>
         <div>
           <label class="muted">Required</label><br>
@@ -102,7 +123,13 @@
         </div>
         <button type="button" class="btn secondary remove-question">Remove</button>
       </div>
-      <div class="options-list" style="margin-top:10px;">${optionsHtml}</div>
+      <div class="options-wrap" style="margin-top:10px;">
+        <label class="muted">MCQ Options</label>
+        <div class="options-list" style="margin-top:8px;">${optionsHtml}</div>
+      </div>
+      <div class="audio-help muted" style="display:none; margin-top:10px;">
+        Applicants will be asked for microphone permission and can record an audio answer in the browser.
+      </div>
       <button type="button" class="btn secondary add-option" style="margin-top:6px;">+ Add Option</button>
     `;
 
@@ -115,21 +142,24 @@
       input.style.marginBottom = '8px';
       card.querySelector('.options-list').appendChild(input);
     });
+    card.querySelector('.question-type').addEventListener('change', () => refreshQuestionTypeUI(card));
 
     wrap.appendChild(card);
+    refreshQuestionTypeUI(card);
   }
 
   function collectQuestions() {
     return Array.from(wrap.querySelectorAll('.card')).map((card, i) => {
       const prompt = card.querySelector('.question-prompt').value.trim();
+      const type = card.querySelector('.question-type').value;
       const required = card.querySelector('.question-required').checked;
-      const options = Array.from(card.querySelectorAll('.option-input'))
-        .map((i) => i.value.trim())
-        .filter(Boolean);
+      const options = type === 'single_choice'
+        ? Array.from(card.querySelectorAll('.option-input')).map((i) => i.value.trim()).filter(Boolean)
+        : [];
 
       return {
         id: i + 1,
-        type: 'single_choice',
+        type,
         prompt,
         options,
         required,
@@ -185,9 +215,9 @@
       return;
     }
 
-    const invalid = payload.questions.find((q) => q.options.length < 2);
+    const invalid = payload.questions.find((q) => q.type === 'single_choice' && q.options.length < 2);
     if (invalid) {
-      saveStatus.textContent = 'Each question must have at least two options.';
+      saveStatus.textContent = 'Each MCQ question must have at least two options.';
       return;
     }
 

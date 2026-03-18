@@ -1250,31 +1250,63 @@ def _normalize_exam_questions(questions_raw):
     if not isinstance(questions_raw, list):
         return None
 
+    allowed_types = {"single_choice", "audio_input"}
     normalized = []
     for idx, q in enumerate(questions_raw, start=1):
         if not isinstance(q, dict):
             return None
 
         prompt = (q.get("prompt") or "").strip()
-        options = q.get("options") or []
         question_type = (q.get("type") or "single_choice").strip().lower()
+        required = bool(q.get("required", True))
 
-        if not prompt or not isinstance(options, list) or len(options) < 2:
+        if not prompt or question_type not in allowed_types:
             return None
 
-        clean_options = [str(opt).strip() for opt in options if str(opt).strip()]
-        if len(clean_options) < 2:
-            return None
+        clean_options = []
+        if question_type == "single_choice":
+            options = q.get("options") or []
+            if not isinstance(options, list):
+                return None
+            clean_options = [str(opt).strip() for opt in options if str(opt).strip()]
+            if len(clean_options) < 2:
+                return None
 
         normalized.append({
             "id": int(q.get("id") or idx),
             "type": question_type,
             "prompt": prompt,
             "options": clean_options,
-            "required": bool(q.get("required", True)),
+            "required": required,
         })
 
     return normalized if normalized else None
+
+
+def _validate_exam_answers(questions, answers):
+    if not isinstance(answers, dict) or not answers:
+        return "answers must be a non-empty object"
+
+    question_map = {str(q.get("id")): q for q in (questions or [])}
+    for qid, question in question_map.items():
+        answer = answers.get(qid)
+        if answer in [None, "", []]:
+            if question.get("required", True):
+                return f"Answer required for question {qid}"
+            continue
+
+        qtype = (question.get("type") or "single_choice").strip().lower()
+        if qtype == "single_choice":
+            if not isinstance(answer, str) or answer not in (question.get("options") or []):
+                return f"Invalid choice submitted for question {qid}"
+        elif qtype == "audio_input":
+            if not isinstance(answer, dict):
+                return f"Audio answer required for question {qid}"
+            data_url = str(answer.get("data_url") or "").strip()
+            if not data_url.startswith("data:audio"):
+                return f"Invalid audio payload for question {qid}"
+
+    return None
 
 
 @api_bp.get("/admin/teacher-hiring-exam")
@@ -1548,8 +1580,18 @@ def public_teacher_hiring_exam_submit():
     if "@" not in email or "." not in email.split("@")[-1]:
         return _json_error("email must be valid", 422)
 
-    if not isinstance(answers, dict) or not answers:
-        return _json_error("answers must be a non-empty object", 422)
+    exam_row = db.session.execute(text("""
+        SELECT id, questions_json
+        FROM teacher_hiring_exam
+        WHERE id = :exam_id AND is_active = 1
+        LIMIT 1
+    """), {"exam_id": exam_id}).mappings().first()
+    if not exam_row:
+        return _json_error("Exam is not active or does not exist", 404)
+
+    validation_error = _validate_exam_answers(exam_row.get("questions_json") or [], answers)
+    if validation_error:
+        return _json_error(validation_error, 422)
 
     payment_row = _require_paid_exam_session(payment_session_id)
     if not payment_row:
@@ -1560,16 +1602,6 @@ def public_teacher_hiring_exam_submit():
 
     if (payment_row["email"] or "").strip().lower() != email:
         return _json_error("email does not match payment session", 422)
-
-    exam = db.session.execute(text("""
-        SELECT id
-        FROM teacher_hiring_exam
-        WHERE id = :exam_id AND is_active = 1
-        LIMIT 1
-    """), {"exam_id": exam_id}).mappings().first()
-
-    if not exam:
-        return _json_error("Exam is not active or does not exist", 404)
 
     linked_user_id = db.session.execute(text("""
         SELECT id

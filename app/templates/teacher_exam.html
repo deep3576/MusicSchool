@@ -3,7 +3,7 @@
 <section class="section">
   <div class="section-head">
     <h2>We Are Hiring Teachers</h2>
-    <p class="muted">Application fee is <strong>$5 USD</strong>. After successful payment, exam will unlock immediately.</p>
+    <p class="muted">Application fee is <strong>$5 USD</strong>. After successful payment, the exam unlocks. Some questions may require microphone access for audio answers.</p>
   </div>
 
   <div class="card" style="max-width:900px; margin:0 auto;">
@@ -55,6 +55,8 @@
 
   let exam = null;
   let unlockedSessionId = null;
+  const audioAnswers = {};
+  const recorders = {};
 
   function esc(v) {
     return (v || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[s]));
@@ -66,6 +68,131 @@
       email: document.getElementById('email').value.trim().toLowerCase(),
       phone: document.getElementById('phone').value.trim(),
     };
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function stopRecorderStream(questionId) {
+    const state = recorders[questionId];
+    if (!state || !state.stream) return;
+    state.stream.getTracks().forEach((track) => track.stop());
+  }
+
+  function renderSingleChoiceQuestion(q, index) {
+    const options = (q.options || []).map((opt) => `
+      <label style="display:block; margin:6px 0;">
+        <input type="radio" name="q_${q.id}" value="${esc(opt)}" ${q.required ? 'required' : ''}>
+        ${esc(opt)}
+      </label>
+    `).join('');
+
+    return `
+      <div class="card" style="margin-bottom:12px;">
+        <div style="font-weight:600;">Q${index + 1}. ${esc(q.prompt)}</div>
+        <div style="margin-top:8px;">${options}</div>
+      </div>
+    `;
+  }
+
+  function renderAudioQuestion(q, index) {
+    return `
+      <div class="card audio-question" data-question-id="${q.id}" style="margin-bottom:12px;">
+        <div style="font-weight:600;">Q${index + 1}. ${esc(q.prompt)}</div>
+        <div class="muted" style="margin-top:8px;">This answer requires microphone permission and an audio recording.</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+          <button type="button" class="btn secondary enable-audio">Enable Microphone</button>
+          <button type="button" class="btn secondary start-audio">Start Recording</button>
+          <button type="button" class="btn secondary stop-audio">Stop Recording</button>
+        </div>
+        <div class="audio-status muted" style="margin-top:8px;">No recording yet.</div>
+        <audio class="audio-preview" controls style="display:none; margin-top:10px; width:100%;"></audio>
+      </div>
+    `;
+  }
+
+  async function requestAudioStream(questionId) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('Audio recording is not supported in this browser');
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (!recorders[questionId]) recorders[questionId] = {};
+    recorders[questionId].stream = stream;
+    return stream;
+  }
+
+  function attachAudioHandlers(container, q) {
+    const questionId = String(q.id);
+    const enableBtn = container.querySelector('.enable-audio');
+    const startBtn = container.querySelector('.start-audio');
+    const stopBtn = container.querySelector('.stop-audio');
+    const status = container.querySelector('.audio-status');
+    const preview = container.querySelector('.audio-preview');
+
+    enableBtn.addEventListener('click', async () => {
+      status.textContent = 'Requesting microphone permission...';
+      try {
+        const stream = await requestAudioStream(questionId);
+        status.textContent = 'Microphone access granted. You can record now.';
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (err) {
+        status.textContent = err.message || 'Unable to access microphone';
+      }
+    });
+
+    startBtn.addEventListener('click', async () => {
+      status.textContent = 'Starting audio recording...';
+      try {
+        if (typeof MediaRecorder === 'undefined') {
+          throw new Error('Audio recording is not supported in this browser');
+        }
+        const stream = await requestAudioStream(questionId);
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+        const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        const chunks = [];
+
+        recorders[questionId] = { stream, mediaRecorder, chunks };
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) chunks.push(event.data);
+        };
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+          const dataUrl = await blobToDataUrl(blob);
+          audioAnswers[questionId] = {
+            kind: 'audio_input',
+            mime_type: blob.type,
+            data_url: dataUrl,
+          };
+          preview.src = URL.createObjectURL(blob);
+          preview.style.display = 'block';
+          status.textContent = 'Audio recorded successfully.';
+          stopRecorderStream(questionId);
+        };
+
+        mediaRecorder.start();
+        status.textContent = 'Recording in progress... click Stop Recording when finished.';
+      } catch (err) {
+        status.textContent = err.message || 'Unable to start recording';
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      const state = recorders[questionId];
+      if (!state || !state.mediaRecorder || state.mediaRecorder.state !== 'recording') {
+        status.textContent = 'No active recording to stop.';
+        return;
+      }
+      state.mediaRecorder.stop();
+      status.textContent = 'Processing audio...';
+    });
   }
 
   async function unlockExam(sessionId) {
@@ -86,19 +213,15 @@
 
     questionsEl.innerHTML = '';
     (exam.questions || []).forEach((q, index) => {
-      const options = (q.options || []).map((opt) => `
-        <label style="display:block; margin:6px 0;">
-          <input type="radio" name="q_${q.id}" value="${esc(opt)}" ${q.required ? 'required' : ''}>
-          ${esc(opt)}
-        </label>
-      `).join('');
+      questionsEl.innerHTML += q.type === 'audio_input'
+        ? renderAudioQuestion(q, index)
+        : renderSingleChoiceQuestion(q, index);
+    });
 
-      questionsEl.innerHTML += `
-        <div class="card" style="margin-bottom:12px;">
-          <div style="font-weight:600;">Q${index + 1}. ${esc(q.prompt)}</div>
-          <div style="margin-top:8px;">${options}</div>
-        </div>
-      `;
+    (exam.questions || []).forEach((q) => {
+      if (q.type !== 'audio_input') return;
+      const container = questionsEl.querySelector(`.audio-question[data-question-id="${q.id}"]`);
+      if (container) attachAudioHandlers(container, q);
     });
 
     paymentFormEl.style.display = 'none';
@@ -141,6 +264,10 @@
 
     const answers = {};
     (exam.questions || []).forEach((q) => {
+      if (q.type === 'audio_input') {
+        if (audioAnswers[String(q.id)]) answers[String(q.id)] = audioAnswers[String(q.id)];
+        return;
+      }
       const checked = formEl.querySelector(`input[name="q_${q.id}"]:checked`);
       if (checked) answers[String(q.id)] = checked.value;
     });
@@ -165,6 +292,7 @@
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Submission failed');
       submitStatusEl.textContent = 'Exam submitted. Confirmation email sent.';
+      Object.keys(recorders).forEach(stopRecorderStream);
       formEl.reset();
     } catch (err) {
       submitStatusEl.textContent = err.message || 'Submission failed';
