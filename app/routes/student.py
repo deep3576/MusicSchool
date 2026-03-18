@@ -67,6 +67,11 @@ def admissions():
     return render_template("admissions.html", title="Admissions")
 
 
+@main_bp.get("/careers/teacher-exam")
+def teacher_exam():
+    return render_template("teacher_exam.html", title="Teacher Hiring Exam")
+
+
 @main_bp.get("/auth/login")
 def auth_login_alias():
     return redirect(url_for("student.login"))
