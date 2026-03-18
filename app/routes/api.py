@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from functools import wraps
 
-from flask import Blueprint, current_app, jsonify, request, session, url_for
+from flask import Blueprint, current_app, has_app_context, jsonify, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import text
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
@@ -1397,6 +1397,8 @@ def admin_teacher_hiring_exam_upsert():
 
 
 def _dev_exam_bypass_enabled():
+    if has_app_context():
+        return bool(current_app.config.get("ALLOW_HIRING_EXAM_DEV_BYPASS", False))
     return os.getenv("ALLOW_HIRING_EXAM_DEV_BYPASS", "").strip().lower() in {"1", "true", "yes", "on"}
 
 def _stripe_secrets():

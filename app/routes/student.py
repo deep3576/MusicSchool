@@ -70,7 +70,7 @@ def admissions():
 
 @main_bp.get("/careers/teacher-exam")
 def teacher_exam():
-    dev_exam_bypass_enabled = os.getenv("ALLOW_HIRING_EXAM_DEV_BYPASS", "").strip().lower() in {"1", "true", "yes", "on"}
+    dev_exam_bypass_enabled = bool(current_app.config.get("ALLOW_HIRING_EXAM_DEV_BYPASS", False))
     return render_template(
         "teacher_exam.html",
         title="Teacher Hiring Exam",

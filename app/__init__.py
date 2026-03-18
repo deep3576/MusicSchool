@@ -89,6 +89,11 @@ def create_app() -> Flask:
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     app.config["MUSIC_SCHOOL_SCHEMA"] = cfg.get(db_section, "database")
+    app.config["ALLOW_HIRING_EXAM_DEV_BYPASS"] = cfg.getboolean(
+        "features",
+        "allow_hiring_exam_dev_bypass",
+        fallback=os.getenv("ALLOW_HIRING_EXAM_DEV_BYPASS", "").strip().lower() in {"1", "true", "yes", "on"},
+    )
 
     kingsman_section = _get_optional_kingsman_section(cfg, db_section)
     if kingsman_section:
