@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
+import os
+
 from datetime import datetime
 from pathlib import Path
 from functools import wraps
 
-from flask import Blueprint, current_app, jsonify, request, session, url_for
+from flask import Blueprint, current_app, has_app_context, jsonify, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import text
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
@@ -38,6 +41,19 @@ def _row_to_dict(row):
         out[k] = _to_iso(v)
     return out
 
+
+
+
+def _json_field(value):
+    if value in (None, ""):
+        return None
+    if isinstance(value, (dict, list)):
+        return value
+    if isinstance(value, (bytes, bytearray)):
+        value = value.decode("utf-8", errors="ignore")
+    if isinstance(value, str):
+        return json.loads(value)
+    return value
 
 def _parse_json():
     return request.get_json(silent=True) or {}
@@ -1240,6 +1256,525 @@ def _student_certificate_dir(student_id: int) -> Path:
     path = _certificates_base_dir() / str(student_id)
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+
+
+def _normalize_exam_questions(questions_raw):
+    if not isinstance(questions_raw, list):
+        return None
+
+    allowed_types = {"single_choice", "audio_input"}
+    normalized = []
+    for idx, q in enumerate(questions_raw, start=1):
+        if not isinstance(q, dict):
+            return None
+
+        prompt = (q.get("prompt") or "").strip()
+        question_type = (q.get("type") or "single_choice").strip().lower()
+        required = bool(q.get("required", True))
+
+        if not prompt or question_type not in allowed_types:
+            return None
+
+        clean_options = []
+        if question_type == "single_choice":
+            options = q.get("options") or []
+            if not isinstance(options, list):
+                return None
+            clean_options = [str(opt).strip() for opt in options if str(opt).strip()]
+            if len(clean_options) < 2:
+                return None
+
+        normalized.append({
+            "id": int(q.get("id") or idx),
+            "type": question_type,
+            "prompt": prompt,
+            "options": clean_options,
+            "required": required,
+        })
+
+    return normalized if normalized else None
+
+
+def _validate_exam_answers(questions, answers):
+    if not isinstance(answers, dict) or not answers:
+        return "answers must be a non-empty object"
+
+    question_map = {str(q.get("id")): q for q in (questions or [])}
+    for qid, question in question_map.items():
+        answer = answers.get(qid)
+        if answer in [None, "", []]:
+            if question.get("required", True):
+                return f"Answer required for question {qid}"
+            continue
+
+        qtype = (question.get("type") or "single_choice").strip().lower()
+        if qtype == "single_choice":
+            if not isinstance(answer, str) or answer not in (question.get("options") or []):
+                return f"Invalid choice submitted for question {qid}"
+        elif qtype == "audio_input":
+            if not isinstance(answer, dict):
+                return f"Audio answer required for question {qid}"
+            data_url = str(answer.get("data_url") or "").strip()
+            if not data_url.startswith("data:audio"):
+                return f"Invalid audio payload for question {qid}"
+
+    return None
+
+
+@api_bp.get("/admin/teacher-hiring-exam")
+@_require_role("admin")
+def admin_teacher_hiring_exam_get():
+    row = db.session.execute(text("""
+        SELECT id, title, description, instructions, duration_min, questions_json, is_active, created_at, updated_at
+        FROM teacher_hiring_exam
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+    """)).mappings().first()
+
+    if not row:
+        return jsonify({"ok": True, "exam": None})
+
+    return jsonify({
+        "ok": True,
+        "exam": {
+            "id": int(row["id"]),
+            "title": row["title"],
+            "description": row["description"],
+            "instructions": row["instructions"],
+            "duration_min": int(row["duration_min"] or 45),
+            "questions": _json_field(row["questions_json"]) or [],
+            "is_active": bool(row["is_active"]),
+            "created_at": _to_iso(row["created_at"]),
+            "updated_at": _to_iso(row["updated_at"]),
+        },
+    })
+
+
+@api_bp.post("/admin/teacher-hiring-exam")
+@_require_role("admin")
+def admin_teacher_hiring_exam_upsert():
+    data = _parse_json()
+    title = (data.get("title") or "Teacher Hiring Assessment").strip()
+    description = (data.get("description") or "").strip()
+    instructions = (data.get("instructions") or "").strip()
+    raw_duration_min = data.get("duration_min")
+    try:
+        duration_min = int(raw_duration_min or 45)
+    except (TypeError, ValueError):
+        return _json_error("duration_min must be a number", 422)
+    questions = _normalize_exam_questions(data.get("questions"))
+
+    if not questions:
+        return _json_error("questions must be a list with at least one valid question", 422)
+
+    if duration_min < 5 or duration_min > 300:
+        return _json_error("duration_min must be between 5 and 300", 422)
+
+    db.session.execute(text("UPDATE teacher_hiring_exam SET is_active = 0 WHERE is_active = 1"))
+
+    db.session.execute(text("""
+        INSERT INTO teacher_hiring_exam
+          (title, description, instructions, duration_min, questions_json, is_active, created_by_user_id, created_at, updated_at)
+        VALUES
+          (:title, :description, :instructions, :duration_min, :questions_json, 1, :created_by_user_id, NOW(), NOW())
+    """), {
+        "title": title,
+        "description": description or None,
+        "instructions": instructions or None,
+        "duration_min": duration_min,
+        "questions_json": json.dumps(questions),
+        "created_by_user_id": current_user.id,
+    })
+    exam_id = int(db.session.execute(text("SELECT LAST_INSERT_ID()")).scalar())
+    db.session.commit()
+
+    return jsonify({"ok": True, "exam_id": exam_id}), 201
+
+
+
+
+def _dev_exam_bypass_enabled():
+    if has_app_context():
+        return bool(current_app.config.get("ALLOW_HIRING_EXAM_DEV_BYPASS", False))
+    return os.getenv("ALLOW_HIRING_EXAM_DEV_BYPASS", "").strip().lower() in {"1", "true", "yes", "on"}
+
+def _stripe_secrets():
+    secret_key = os.getenv("STRIPE_SECRET_KEY", "").strip()
+    publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY", "").strip()
+    if not secret_key or not publishable_key:
+        return None, None, "Stripe keys are not configured"
+    return secret_key, publishable_key, None
+
+
+def _require_paid_exam_session(payment_session_id: str):
+    if not payment_session_id:
+        return None
+
+    return db.session.execute(text("""
+        SELECT id, exam_id, email, full_name, stripe_session_id, payment_status, paid_at
+        FROM teacher_hiring_exam_payment
+        WHERE stripe_session_id = :session_id
+          AND payment_status = 'PAID'
+        LIMIT 1
+    """), {"session_id": payment_session_id}).mappings().first()
+
+
+@api_bp.post("/public/teacher-hiring-exam/payments/resume")
+def public_teacher_hiring_exam_resume():
+    data = _parse_json()
+    full_name = (data.get("full_name") or "").strip().lower()
+    email = (data.get("email") or "").strip().lower()
+
+    if not email:
+        return _json_error("email is required", 422)
+
+    exam = db.session.execute(text("""
+        SELECT id
+        FROM teacher_hiring_exam
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+    """)).mappings().first()
+    if not exam:
+        return _json_error("No active teacher hiring exam found", 404)
+
+    submitted_attempt = db.session.execute(text("""
+        SELECT id
+        FROM teacher_hiring_exam_attempt
+        WHERE exam_id = :exam_id AND email = :email
+        LIMIT 1
+    """), {"exam_id": int(exam["id"]), "email": email}).scalar()
+    if submitted_attempt:
+        return _json_error("Exam already submitted for this email", 409)
+
+    params = {"exam_id": int(exam["id"]), "email": email}
+    name_filter = ""
+    if full_name:
+        name_filter = " AND LOWER(full_name) = :full_name"
+        params["full_name"] = full_name
+
+    payment = db.session.execute(text(f"""
+        SELECT stripe_session_id
+        FROM teacher_hiring_exam_payment
+        WHERE exam_id = :exam_id
+          AND email = :email
+          AND payment_status = 'PAID'
+          {name_filter}
+        ORDER BY paid_at DESC, id DESC
+        LIMIT 1
+    """), params).mappings().first()
+
+    if not payment:
+        return _json_error("No paid exam session found for this user", 404)
+
+    return jsonify({
+        "ok": True,
+        "payment_session_id": payment["stripe_session_id"],
+    })
+
+
+@api_bp.post("/public/teacher-hiring-exam/payments/dev-unlock")
+def public_teacher_hiring_exam_dev_unlock():
+    if not _dev_exam_bypass_enabled():
+        return _json_error("Dev exam bypass is disabled", 403)
+
+    data = _parse_json()
+    full_name = (data.get("full_name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+
+    if not full_name or not email:
+        return _json_error("full_name and email are required", 422)
+
+    exam = db.session.execute(text("""
+        SELECT id
+        FROM teacher_hiring_exam
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+    """)).mappings().first()
+    if not exam:
+        return _json_error("No active teacher hiring exam found", 404)
+
+    payment_session_id = f"dev_exam_{int(datetime.utcnow().timestamp() * 1000)}"
+    db.session.execute(text("""
+        INSERT INTO teacher_hiring_exam_payment
+          (exam_id, full_name, email, amount_cents, currency, stripe_session_id, payment_status, paid_at, created_at, updated_at)
+        VALUES
+          (:exam_id, :full_name, :email, 0, 'usd', :stripe_session_id, 'PAID', NOW(), NOW(), NOW())
+    """), {
+        "exam_id": int(exam["id"]),
+        "full_name": full_name,
+        "email": email,
+        "stripe_session_id": payment_session_id,
+    })
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "exam_id": int(exam["id"]),
+        "payment_session_id": payment_session_id,
+        "dev_mode_enabled": True,
+    })
+
+
+@api_bp.post("/public/teacher-hiring-exam/payments/checkout-session")
+def public_teacher_hiring_exam_checkout_session():
+    data = _parse_json()
+    full_name = (data.get("full_name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    success_url = (data.get("success_url") or "").strip()
+    cancel_url = (data.get("cancel_url") or "").strip()
+
+    if not full_name or not email:
+        return _json_error("full_name and email are required", 422)
+    if not success_url or not cancel_url:
+        return _json_error("success_url and cancel_url are required", 422)
+
+    exam = db.session.execute(text("""
+        SELECT id, title
+        FROM teacher_hiring_exam
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+    """)).mappings().first()
+    if not exam:
+        return _json_error("No active teacher hiring exam found", 404)
+
+    secret_key, publishable_key, stripe_err = _stripe_secrets()
+    if stripe_err:
+        return _json_error(stripe_err, 500)
+
+    try:
+        import stripe
+        stripe.api_key = secret_key
+        checkout = stripe.checkout.Session.create(
+            mode="payment",
+            customer_email=email,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "unit_amount": 500,
+                    "product_data": {
+                        "name": "Teacher Application Fee",
+                        "description": "Application fee for teacher hiring exam",
+                    },
+                },
+                "quantity": 1,
+            }],
+            metadata={
+                "exam_id": str(exam["id"]),
+                "full_name": full_name,
+                "email": email,
+            },
+        )
+    except ModuleNotFoundError:
+        return _json_error("stripe package is not installed", 500)
+    except Exception as exc:
+        return _json_error(f"Unable to create Stripe checkout session: {exc}", 500)
+
+    db.session.execute(text("""
+        INSERT INTO teacher_hiring_exam_payment
+          (exam_id, full_name, email, amount_cents, currency, stripe_session_id, payment_status, created_at)
+        VALUES
+          (:exam_id, :full_name, :email, 500, 'usd', :stripe_session_id, 'PENDING', NOW())
+    """), {
+        "exam_id": int(exam["id"]),
+        "full_name": full_name,
+        "email": email,
+        "stripe_session_id": checkout["id"],
+    })
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "exam_id": int(exam["id"]),
+        "amount_cents": 500,
+        "currency": "usd",
+        "checkout_session_id": checkout["id"],
+        "checkout_url": checkout.get("url"),
+        "stripe_publishable_key": publishable_key,
+    })
+
+
+@api_bp.post("/public/teacher-hiring-exam/payments/confirm")
+def public_teacher_hiring_exam_confirm_payment():
+    data = _parse_json()
+    payment_session_id = (data.get("payment_session_id") or "").strip()
+    if not payment_session_id:
+        return _json_error("payment_session_id is required", 422)
+
+    secret_key, _, stripe_err = _stripe_secrets()
+    if stripe_err:
+        return _json_error(stripe_err, 500)
+
+    try:
+        import stripe
+        stripe.api_key = secret_key
+        checkout = stripe.checkout.Session.retrieve(payment_session_id)
+    except ModuleNotFoundError:
+        return _json_error("stripe package is not installed", 500)
+    except Exception as exc:
+        return _json_error(f"Unable to verify Stripe payment: {exc}", 500)
+
+    payment_status = (checkout.get("payment_status") or "").upper()
+    paid = payment_status == "PAID"
+
+    db.session.execute(text("""
+        UPDATE teacher_hiring_exam_payment
+        SET payment_status = :payment_status,
+            stripe_payment_intent_id = :stripe_payment_intent_id,
+            paid_at = CASE WHEN :paid = 1 THEN NOW() ELSE paid_at END,
+            updated_at = NOW()
+        WHERE stripe_session_id = :stripe_session_id
+    """), {
+        "payment_status": payment_status or "PENDING",
+        "stripe_payment_intent_id": checkout.get("payment_intent"),
+        "paid": 1 if paid else 0,
+        "stripe_session_id": payment_session_id,
+    })
+    db.session.commit()
+
+    return jsonify({"ok": True, "payment_verified": paid, "payment_status": payment_status or "PENDING"})
+
+
+@api_bp.get("/public/teacher-hiring-exam/unlocked")
+def public_teacher_hiring_exam_unlocked_get():
+    payment_session_id = (request.args.get("payment_session_id") or "").strip()
+    payment_row = _require_paid_exam_session(payment_session_id)
+    if not payment_row:
+        return _json_error("Valid paid payment_session_id is required", 403)
+
+    row = db.session.execute(text("""
+        SELECT id, title, description, instructions, duration_min, questions_json
+        FROM teacher_hiring_exam
+        WHERE id = :exam_id AND is_active = 1
+        LIMIT 1
+    """), {"exam_id": int(payment_row["exam_id"])}).mappings().first()
+
+    if not row:
+        return _json_error("No active teacher hiring exam found", 404)
+
+    return jsonify({
+        "ok": True,
+        "payment": {
+            "session_id": payment_session_id,
+            "full_name": payment_row["full_name"],
+            "email": payment_row["email"],
+            "paid_at": _to_iso(payment_row["paid_at"]),
+        },
+        "exam": {
+            "id": int(row["id"]),
+            "title": row["title"],
+            "description": row["description"],
+            "instructions": row["instructions"],
+            "duration_min": int(row["duration_min"] or 45),
+            "questions": _json_field(row["questions_json"]) or [],
+        },
+    })
+
+
+@api_bp.post("/public/teacher-hiring-exam/attempts")
+def public_teacher_hiring_exam_submit():
+    data = _parse_json()
+
+    try:
+        exam_id = int(data.get("exam_id") or 0)
+    except (TypeError, ValueError):
+        return _json_error("exam_id must be a number", 422)
+
+    full_name = (data.get("full_name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    phone = (data.get("phone") or "").strip()
+    payment_session_id = (data.get("payment_session_id") or "").strip()
+    answers = data.get("answers") or {}
+
+    if not exam_id or not full_name or not email or not payment_session_id:
+        return _json_error("exam_id, full_name, email and payment_session_id are required", 422)
+
+    if "@" not in email or "." not in email.split("@")[-1]:
+        return _json_error("email must be valid", 422)
+
+    exam_row = db.session.execute(text("""
+        SELECT id, questions_json
+        FROM teacher_hiring_exam
+        WHERE id = :exam_id AND is_active = 1
+        LIMIT 1
+    """), {"exam_id": exam_id}).mappings().first()
+    if not exam_row:
+        return _json_error("Exam is not active or does not exist", 404)
+
+    validation_error = _validate_exam_answers(_json_field(exam_row.get("questions_json")) or [], answers)
+    if validation_error:
+        return _json_error(validation_error, 422)
+
+    payment_row = _require_paid_exam_session(payment_session_id)
+    if not payment_row:
+        return _json_error("Payment is not verified for this exam", 403)
+
+    if int(payment_row["exam_id"]) != exam_id:
+        return _json_error("payment_session_id does not match exam_id", 422)
+
+    if (payment_row["email"] or "").strip().lower() != email:
+        return _json_error("email does not match payment session", 422)
+
+    existing_attempt_id = db.session.execute(text("""
+        SELECT id
+        FROM teacher_hiring_exam_attempt
+        WHERE exam_id = :exam_id AND email = :email
+        LIMIT 1
+    """), {"exam_id": exam_id, "email": email}).scalar()
+    if existing_attempt_id:
+        return _json_error("This user has already submitted the exam", 409)
+
+    linked_user_id = db.session.execute(text("""
+        SELECT id
+        FROM user
+        WHERE email = :email
+        LIMIT 1
+    """), {"email": email}).scalar()
+
+    db.session.execute(text("""
+        INSERT INTO teacher_hiring_exam_attempt
+          (exam_id, full_name, email, phone, answers_json, existing_user_id, payment_session_id, submitted_at, status)
+        VALUES
+          (:exam_id, :full_name, :email, :phone, :answers_json, :existing_user_id, :payment_session_id, NOW(), 'SUBMITTED')
+    """), {
+        "exam_id": exam_id,
+        "full_name": full_name,
+        "email": email,
+        "phone": phone or None,
+        "answers_json": json.dumps(answers),
+        "existing_user_id": int(linked_user_id) if linked_user_id else None,
+        "payment_session_id": payment_session_id,
+    })
+    attempt_id = int(db.session.execute(text("SELECT LAST_INSERT_ID()")).scalar())
+    db.session.commit()
+
+    body = (
+        "Your teacher exam is completed and submitted. "
+        "You will get updates from the admin department about your results "
+        "and hiring process if passed in exam."
+    )
+    html = """
+        <p>Your teacher exam is completed and submitted.</p>
+        <p>You will get updates from the admin department about your results and hiring process if passed in exam.</p>
+    """
+    try:
+        send_email(email, subject="Teacher Exam Submission Confirmation", body=body, html=html)
+    except Exception:
+        current_app.logger.exception("teacher hiring exam confirmation email failed")
+
+    return jsonify({
+        "ok": True,
+        "attempt_id": attempt_id,
+        "linked_existing_user": bool(linked_user_id),
+        "message": "Exam submitted successfully",
+    }), 201
 
 
 @api_bp.get("/teacher/students/<int:student_id>/certificates")

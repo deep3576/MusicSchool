@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 from collections import defaultdict
 from datetime import datetime, date, time, timedelta, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, has_request_context
@@ -257,6 +258,83 @@ def reply_message(msg_id):
     return redirect(url_for("admin.messages"))
 
 
+
+
+
+
+@admin_bp.get("/hiring-exam")
+@admin_required
+def hiring_exam():
+    return render_template("admin/hiring_exam.html", title="Hiring Exam Setup")
+
+
+def _parse_attempt_answers(value):
+    if not value:
+        return {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, (bytes, bytearray)):
+        value = value.decode("utf-8", errors="ignore")
+    if isinstance(value, str):
+        return json.loads(value)
+    return value
+
+
+@admin_bp.get("/hiring-exam-attempts")
+@admin_required
+def hiring_exam_attempts():
+    q = (request.args.get("q") or "").strip().lower()
+    page = max(int(request.args.get("page") or 1), 1)
+    per_page = 20
+    offset = (page - 1) * per_page
+
+    where = ""
+    params = {"limit": per_page, "offset": offset}
+    if q:
+        where = "WHERE LOWER(email) LIKE :q OR LOWER(full_name) LIKE :q"
+        params["q"] = f"%{q}%"
+
+    total = int(db.session.execute(text(f"""
+        SELECT COUNT(*)
+        FROM teacher_hiring_exam_attempt
+        {where}
+    """), params).scalar() or 0)
+
+    rows = db.session.execute(text(f"""
+        SELECT id, exam_id, full_name, email, phone, payment_session_id, answers_json, submitted_at, status, score, review_notes
+        FROM teacher_hiring_exam_attempt
+        {where}
+        ORDER BY submitted_at DESC, id DESC
+        LIMIT :limit OFFSET :offset
+    """), params).mappings().all()
+
+    items = []
+    for row in rows:
+        answers = _parse_attempt_answers(row["answers_json"]) or {}
+        items.append(_ns({
+            "id": int(row["id"]),
+            "exam_id": int(row["exam_id"]),
+            "full_name": row["full_name"],
+            "email": row["email"],
+            "phone": row["phone"],
+            "payment_session_id": row["payment_session_id"],
+            "answers": answers,
+            "submitted_at": row["submitted_at"],
+            "status": row["status"],
+            "score": row["score"],
+            "review_notes": row["review_notes"],
+        }))
+
+    total_pages = max((total + per_page - 1) // per_page, 1)
+    return render_template(
+        "admin/hiring_exam_attempts.html",
+        title="Hiring Exam Submissions",
+        items=items,
+        q=q,
+        page=page,
+        total_pages=total_pages,
+        total=total,
+    )
 
 
 @admin_bp.get("/login")

@@ -45,7 +45,8 @@
             <a href="{{ url_for('student.book') }}">Book Now</a>
             <a href="{{ url_for('student.my_bookings') }}">My Bookings</a>
             {% elif active_role == 'admin' %}
-            <a href="{{ url_for('admin.messages') }}">Admin</a>
+            <a href="{{ url_for('admin.messages') }}">Messages</a>
+            <a href="{{ url_for('admin.hiring_exam') }}">Hiring Exam</a>
             {% elif active_role == 'teacher' %}
             <a href="{{ url_for('teacher.todaysClasses') }}">Teacher</a>
             {% endif %}
