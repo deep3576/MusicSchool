@@ -26,7 +26,7 @@
       </div>
       <div style="margin-top:16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
         <button class="btn" type="submit">Pay $5 & Unlock Exam</button>
-        <button class="btn secondary" type="button" id="resume-exam" style="display:none;">Resume Paid Exam</button>
+        <button class="btn secondary" type="button" id="resume-exam">Resume Paid Exam</button>
         {% if dev_exam_bypass_enabled %}
         <button class="btn secondary" type="button" id="dev-unlock-exam">Dev Unlock Exam</button>
         <span class="muted">Testing mode enabled: payment bypass is allowed.</span>
@@ -156,7 +156,6 @@
     if (saved.full_name) document.getElementById('full_name').value = saved.full_name;
     if (saved.email) document.getElementById('email').value = saved.email;
     if (saved.phone) document.getElementById('phone').value = saved.phone;
-    resumeExamBtn.style.display = 'inline-flex';
   }
 
   function blobToDataUrl(blob) {
@@ -373,14 +372,21 @@
   });
 
   resumeExamBtn.addEventListener('click', async () => {
-    const saved = getSavedExamAccess();
-    if (!saved || !saved.payment_session_id) {
-      paymentStatusEl.textContent = 'No saved paid exam session found.';
+    const payload = getFormData();
+    if (!payload.email) {
+      paymentStatusEl.textContent = 'Enter your email to resume the paid exam.';
       return;
     }
-    paymentStatusEl.textContent = 'Resuming your paid exam...';
+    paymentStatusEl.textContent = 'Looking up your paid exam session...';
     try {
-      await unlockExam(saved.payment_session_id);
+      const res = await fetch('/api/v1/public/teacher-hiring-exam/payments/resume', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Unable to resume exam');
+      await unlockExam(data.payment_session_id);
       paymentStatusEl.textContent = 'Paid exam resumed successfully.';
     } catch (err) {
       paymentStatusEl.textContent = err.message || 'Unable to resume exam';
@@ -475,9 +481,13 @@
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Submission failed');
-      submitStatusEl.textContent = 'Exam submitted. Confirmation email sent.';
+      submitStatusEl.textContent = 'Exam submitted. Redirecting to homepage...';
       Object.keys(recorders).forEach(stopRecorderStream);
+      localStorage.removeItem(ACCESS_KEY);
       formEl.reset();
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1200);
     } catch (err) {
       submitStatusEl.textContent = err.message || 'Submission failed';
     }

@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS teacher_hiring_exam_attempt (
   INDEX idx_teacher_exam_attempt_email (email),
   INDEX idx_teacher_exam_attempt_existing_user (existing_user_id),
   INDEX idx_teacher_exam_attempt_payment_session (payment_session_id),
+  INDEX idx_teacher_exam_attempt_submitted_at (submitted_at),
+  UNIQUE KEY uq_teacher_exam_attempt_exam_email (exam_id, email),
   CONSTRAINT fk_teacher_hiring_exam_attempt_exam
     FOREIGN KEY (exam_id) REFERENCES teacher_hiring_exam(id)
     ON DELETE CASCADE,

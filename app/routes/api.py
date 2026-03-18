@@ -1422,6 +1422,60 @@ def _require_paid_exam_session(payment_session_id: str):
     """), {"session_id": payment_session_id}).mappings().first()
 
 
+@api_bp.post("/public/teacher-hiring-exam/payments/resume")
+def public_teacher_hiring_exam_resume():
+    data = _parse_json()
+    full_name = (data.get("full_name") or "").strip().lower()
+    email = (data.get("email") or "").strip().lower()
+
+    if not email:
+        return _json_error("email is required", 422)
+
+    exam = db.session.execute(text("""
+        SELECT id
+        FROM teacher_hiring_exam
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+    """)).mappings().first()
+    if not exam:
+        return _json_error("No active teacher hiring exam found", 404)
+
+    submitted_attempt = db.session.execute(text("""
+        SELECT id
+        FROM teacher_hiring_exam_attempt
+        WHERE exam_id = :exam_id AND email = :email
+        LIMIT 1
+    """), {"exam_id": int(exam["id"]), "email": email}).scalar()
+    if submitted_attempt:
+        return _json_error("Exam already submitted for this email", 409)
+
+    params = {"exam_id": int(exam["id"]), "email": email}
+    name_filter = ""
+    if full_name:
+        name_filter = " AND LOWER(full_name) = :full_name"
+        params["full_name"] = full_name
+
+    payment = db.session.execute(text(f"""
+        SELECT stripe_session_id
+        FROM teacher_hiring_exam_payment
+        WHERE exam_id = :exam_id
+          AND email = :email
+          AND payment_status = 'PAID'
+          {name_filter}
+        ORDER BY paid_at DESC, id DESC
+        LIMIT 1
+    """), params).mappings().first()
+
+    if not payment:
+        return _json_error("No paid exam session found for this user", 404)
+
+    return jsonify({
+        "ok": True,
+        "payment_session_id": payment["stripe_session_id"],
+    })
+
+
 @api_bp.post("/public/teacher-hiring-exam/payments/dev-unlock")
 def public_teacher_hiring_exam_dev_unlock():
     if not _dev_exam_bypass_enabled():
@@ -1667,6 +1721,15 @@ def public_teacher_hiring_exam_submit():
 
     if (payment_row["email"] or "").strip().lower() != email:
         return _json_error("email does not match payment session", 422)
+
+    existing_attempt_id = db.session.execute(text("""
+        SELECT id
+        FROM teacher_hiring_exam_attempt
+        WHERE exam_id = :exam_id AND email = :email
+        LIMIT 1
+    """), {"exam_id": exam_id, "email": email}).scalar()
+    if existing_attempt_id:
+        return _json_error("This user has already submitted the exam", 409)
 
     linked_user_id = db.session.execute(text("""
         SELECT id

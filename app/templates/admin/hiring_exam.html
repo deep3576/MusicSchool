@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="section">
-  <div class="section-head">
-    <h2>Teacher Hiring Exam Setup</h2>
-    <p class="muted">Create/update the exam JSON that applicants see after paying the $5 Stripe application fee. You can now define MCQ and audio-input questions.</p>
+  <div class="section-head" style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+    <div>
+      <h2>Teacher Hiring Exam Setup</h2>
+      <p class="muted">Create/update the exam JSON that applicants see after paying the $5 Stripe application fee. You can now define MCQ and audio-input questions.</p>
+    </div>
+    <a class="btn secondary" href="{{ url_for('admin.hiring_exam_attempts') }}">View Exam Submissions</a>
   </div>
 
   <div class="card admin-nav" style="margin-top:14px; margin-bottom:14px;">
