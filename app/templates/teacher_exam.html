@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <h2>We Are Hiring Teachers</h2>
+    <p class="muted">Application fee is <strong>$5 USD</strong>. After successful payment, exam will unlock immediately.</p>
+  </div>
+
+  <div class="card" style="max-width:900px; margin:0 auto;">
+    <div id="exam-status" class="muted">Step 1: Complete payment to unlock exam.</div>
+
+    <form id="payment-form" style="margin-top:16px;">
+      <div class="grid2" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <label class="muted">Full name</label>
+          <input class="input" type="text" id="full_name" required />
+        </div>
+        <div>
+          <label class="muted">Email</label>
+          <input class="input" type="email" id="email" required />
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label class="muted">Phone (optional)</label>
+        <input class="input" type="text" id="phone" />
+      </div>
+      <div style="margin-top:16px; display:flex; gap:8px; align-items:center;">
+        <button class="btn" type="submit">Pay $5 & Unlock Exam</button>
+        <span id="payment-status" class="muted"></span>
+      </div>
+    </form>
+
+    <form id="teacher-exam-form" style="display:none; margin-top:16px;">
+      <hr style="margin:18px 0; border-color:var(--border);" />
+      <div id="exam-questions"></div>
+
+      <div style="margin-top:16px; display:flex; gap:8px; align-items:center;">
+        <button class="btn" type="submit">Submit Exam</button>
+        <span id="submit-status" class="muted"></span>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const statusEl = document.getElementById('exam-status');
+  const paymentFormEl = document.getElementById('payment-form');
+  const paymentStatusEl = document.getElementById('payment-status');
+  const formEl = document.getElementById('teacher-exam-form');
+  const questionsEl = document.getElementById('exam-questions');
+  const submitStatusEl = document.getElementById('submit-status');
+
+  let exam = null;
+  let unlockedSessionId = null;
+
+  function esc(v) {
+    return (v || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[s]));
+  }
+
+  function getFormData() {
+    return {
+      full_name: document.getElementById('full_name').value.trim(),
+      email: document.getElementById('email').value.trim().toLowerCase(),
+      phone: document.getElementById('phone').value.trim(),
+    };
+  }
+
+  async function unlockExam(sessionId) {
+    const res = await fetch(`/api/v1/public/teacher-hiring-exam/unlocked?payment_session_id=${encodeURIComponent(sessionId)}`);
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Unable to unlock exam');
+
+    unlockedSessionId = sessionId;
+    exam = data.exam;
+
+    const applicant = data.payment || {};
+    if (applicant.full_name) document.getElementById('full_name').value = applicant.full_name;
+    if (applicant.email) document.getElementById('email').value = applicant.email;
+
+    statusEl.innerHTML = `<h3 style="margin:0;">${esc(exam.title)}</h3>
+      <p class="muted" style="margin-top:8px;">${esc(exam.description || '')}</p>
+      <p class="muted">Payment successful. Duration: ${Number(exam.duration_min || 45)} minutes</p>`;
+
+    questionsEl.innerHTML = '';
+    (exam.questions || []).forEach((q, index) => {
+      const options = (q.options || []).map((opt) => `
+        <label style="display:block; margin:6px 0;">
+          <input type="radio" name="q_${q.id}" value="${esc(opt)}" ${q.required ? 'required' : ''}>
+          ${esc(opt)}
+        </label>
+      `).join('');
+
+      questionsEl.innerHTML += `
+        <div class="card" style="margin-bottom:12px;">
+          <div style="font-weight:600;">Q${index + 1}. ${esc(q.prompt)}</div>
+          <div style="margin-top:8px;">${options}</div>
+        </div>
+      `;
+    });
+
+    paymentFormEl.style.display = 'none';
+    formEl.style.display = 'block';
+  }
+
+  paymentFormEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = getFormData();
+    if (!payload.full_name || !payload.email) return;
+
+    paymentStatusEl.textContent = 'Creating Stripe checkout...';
+    try {
+      const res = await fetch('/api/v1/public/teacher-hiring-exam/payments/checkout-session', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          ...payload,
+          success_url: `${window.location.origin}${window.location.pathname}?payment_success=1&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}${window.location.pathname}?payment_cancelled=1`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Unable to initialize payment');
+
+      paymentStatusEl.textContent = 'Redirecting to Stripe...';
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error('Stripe checkout URL missing');
+      }
+    } catch (err) {
+      paymentStatusEl.textContent = err.message || 'Payment initialization failed';
+    }
+  });
+
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!exam || !unlockedSessionId) return;
+
+    const answers = {};
+    (exam.questions || []).forEach((q) => {
+      const checked = formEl.querySelector(`input[name="q_${q.id}"]:checked`);
+      if (checked) answers[String(q.id)] = checked.value;
+    });
+
+    const applicant = getFormData();
+    const payload = {
+      exam_id: exam.id,
+      full_name: applicant.full_name,
+      email: applicant.email,
+      phone: applicant.phone,
+      payment_session_id: unlockedSessionId,
+      answers,
+    };
+
+    submitStatusEl.textContent = 'Submitting...';
+    try {
+      const res = await fetch('/api/v1/public/teacher-hiring-exam/attempts', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Submission failed');
+      submitStatusEl.textContent = 'Exam submitted. Confirmation email sent.';
+      formEl.reset();
+    } catch (err) {
+      submitStatusEl.textContent = err.message || 'Submission failed';
+    }
+  });
+
+  (async () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment_cancelled') === '1') {
+      paymentStatusEl.textContent = 'Payment cancelled. Please complete payment to continue.';
+      return;
+    }
+
+    const sessionId = params.get('session_id');
+    if (!sessionId) return;
+
+    paymentStatusEl.textContent = 'Verifying payment...';
+    try {
+      const res = await fetch('/api/v1/public/teacher-hiring-exam/payments/confirm', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({payment_session_id: sessionId}),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok || !data.payment_verified) throw new Error(data.error || 'Payment not confirmed');
+      paymentStatusEl.textContent = 'Payment successful. Loading exam...';
+      await unlockExam(sessionId);
+    } catch (err) {
+      paymentStatusEl.textContent = err.message || 'Payment verification failed';
+    }
+  })();
+})();
+</script>
+{% endblock %}
