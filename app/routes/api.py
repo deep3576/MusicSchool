@@ -1414,10 +1414,10 @@ def _require_paid_exam_session(payment_session_id: str):
         return None
 
     return db.session.execute(text("""
-        SELECT id, exam_id, email, full_name, stripe_session_id, status, paid_at
+        SELECT id, exam_id, email, full_name, stripe_session_id, payment_status, paid_at
         FROM teacher_hiring_exam_payment
         WHERE stripe_session_id = :session_id
-          AND status = 'PAID'
+          AND payment_status = 'PAID'
         LIMIT 1
     """), {"session_id": payment_session_id}).mappings().first()
 
