@@ -67,6 +67,16 @@ def admissions():
     return render_template("admissions.html", title="Admissions")
 
 
+@main_bp.get("/careers/teacher-exam")
+def teacher_exam():
+    dev_exam_bypass_enabled = bool(current_app.config.get("ALLOW_HIRING_EXAM_DEV_BYPASS", False))
+    return render_template(
+        "teacher_exam.html",
+        title="Teacher Hiring Exam",
+        dev_exam_bypass_enabled=dev_exam_bypass_enabled,
+    )
+
+
 @main_bp.get("/auth/login")
 def auth_login_alias():
     return redirect(url_for("student.login"))

@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <h2>We Are Hiring Teachers</h2>
+    <p class="muted">Application fee is <strong>$5 USD</strong>. After successful payment, the exam unlocks. You can resume later after payment, and audio answers are only finalized when you explicitly confirm them.</p>
+  </div>
+
+  <div class="card" style="max-width:950px; margin:0 auto;">
+    <div id="exam-status" class="muted">Step 1: Complete payment to unlock exam.</div>
+
+    <form id="payment-form" style="margin-top:16px;">
+      <div class="grid2" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <label class="muted">Full name</label>
+          <input class="input" type="text" id="full_name" required />
+        </div>
+        <div>
+          <label class="muted">Email</label>
+          <input class="input" type="email" id="email" required />
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label class="muted">Phone (optional)</label>
+        <input class="input" type="text" id="phone" />
+      </div>
+      <div style="margin-top:16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button class="btn" type="submit">Pay $5 & Unlock Exam</button>
+        <button class="btn secondary" type="button" id="resume-exam" style="display:none;">Resume Paid Exam</button>
+        {% if dev_exam_bypass_enabled %}
+        <button class="btn secondary" type="button" id="dev-unlock-exam">Dev Unlock Exam</button>
+        <span class="muted">Testing mode enabled: payment bypass is allowed.</span>
+        {% endif %}
+        <span id="payment-status" class="muted"></span>
+      </div>
+    </form>
+
+    <div id="exam-intro" style="display:none; margin-top:20px;">
+      <div class="card" style="border:1px solid var(--border);">
+        <div class="muted" id="exam-meta">Exam unlocked.</div>
+        <h3 id="exam-title" style="margin:8px 0 0;"></h3>
+        <p id="exam-description" class="muted" style="margin-top:10px;"></p>
+        <div style="margin-top:16px;">
+          <div style="font-weight:700; margin-bottom:8px;">Instructions</div>
+          <div id="exam-instructions" class="muted" style="white-space:pre-line;"></div>
+        </div>
+        <div style="margin-top:16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <button class="btn" type="button" id="start-exam">Start Exam</button>
+          <span class="muted">You will answer one question per page.</span>
+        </div>
+      </div>
+    </div>
+
+    <form id="teacher-exam-form" style="display:none; margin-top:16px;">
+      <div class="card" style="border:1px solid var(--border); margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center;">
+          <div>
+            <div id="question-progress" style="font-weight:700;"></div>
+            <div id="question-caption" class="muted" style="margin-top:4px;">Answer carefully before moving ahead.</div>
+          </div>
+          <div id="exam-duration" class="pill"></div>
+        </div>
+      </div>
+
+      <div id="exam-questions"></div>
+
+      <div class="card" style="border:1px solid var(--border); margin-top:12px;">
+        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn secondary" type="button" id="prev-question">Previous</button>
+            <button class="btn secondary" type="button" id="next-question">Next</button>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button class="btn" type="submit" id="submit-exam">Finalize & Submit Exam</button>
+            <span id="submit-status" class="muted"></span>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const ACCESS_KEY = 'teacher_hiring_exam_access';
+
+  const statusEl = document.getElementById('exam-status');
+  const paymentFormEl = document.getElementById('payment-form');
+  const paymentStatusEl = document.getElementById('payment-status');
+  const resumeExamBtn = document.getElementById('resume-exam');
+  const devUnlockBtn = document.getElementById('dev-unlock-exam');
+
+  const introEl = document.getElementById('exam-intro');
+  const examTitleEl = document.getElementById('exam-title');
+  const examMetaEl = document.getElementById('exam-meta');
+  const examDescriptionEl = document.getElementById('exam-description');
+  const examInstructionsEl = document.getElementById('exam-instructions');
+  const startExamBtn = document.getElementById('start-exam');
+
+  const formEl = document.getElementById('teacher-exam-form');
+  const questionsEl = document.getElementById('exam-questions');
+  const submitStatusEl = document.getElementById('submit-status');
+  const questionProgressEl = document.getElementById('question-progress');
+  const questionCaptionEl = document.getElementById('question-caption');
+  const examDurationEl = document.getElementById('exam-duration');
+  const prevQuestionBtn = document.getElementById('prev-question');
+  const nextQuestionBtn = document.getElementById('next-question');
+  const submitExamBtn = document.getElementById('submit-exam');
+
+  const devExamBypassEnabled = {{ 'true' if dev_exam_bypass_enabled else 'false' }};
+
+  let exam = null;
+  let unlockedSessionId = null;
+  let currentQuestionIndex = 0;
+  const audioAnswers = {};
+  const pendingAudioAnswers = {};
+  const recorders = {};
+
+  function esc(v) {
+    return (v || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[s]));
+  }
+
+  function getFormData() {
+    return {
+      full_name: document.getElementById('full_name').value.trim(),
+      email: document.getElementById('email').value.trim().toLowerCase(),
+      phone: document.getElementById('phone').value.trim(),
+    };
+  }
+
+  function saveExamAccess(sessionId) {
+    const applicant = getFormData();
+    localStorage.setItem(ACCESS_KEY, JSON.stringify({
+      payment_session_id: sessionId,
+      full_name: applicant.full_name,
+      email: applicant.email,
+      phone: applicant.phone,
+      saved_at: new Date().toISOString(),
+    }));
+  }
+
+  function getSavedExamAccess() {
+    try {
+      const raw = localStorage.getItem(ACCESS_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function applySavedAccessToForm() {
+    const saved = getSavedExamAccess();
+    if (!saved || !saved.payment_session_id) return;
+    if (saved.full_name) document.getElementById('full_name').value = saved.full_name;
+    if (saved.email) document.getElementById('email').value = saved.email;
+    if (saved.phone) document.getElementById('phone').value = saved.phone;
+    resumeExamBtn.style.display = 'inline-flex';
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function stopRecorderStream(questionId) {
+    const state = recorders[questionId];
+    if (!state || !state.stream) return;
+    state.stream.getTracks().forEach((track) => track.stop());
+  }
+
+  function renderSingleChoiceQuestion(q, index) {
+    const options = (q.options || []).map((opt) => `
+      <label style="display:block; margin:8px 0;">
+        <input type="radio" name="q_${q.id}" value="${esc(opt)}" ${q.required ? 'required' : ''}>
+        ${esc(opt)}
+      </label>
+    `).join('');
+
+    return `
+      <section class="question-screen" data-question-index="${index}" style="display:none;">
+        <div class="card" style="border:1px solid var(--border);">
+          <div style="font-weight:700; font-size:18px;">${esc(q.prompt)}</div>
+          <div class="muted" style="margin-top:8px;">Choose one correct answer.</div>
+          <div style="margin-top:16px;">${options}</div>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderAudioQuestion(q, index) {
+    return `
+      <section class="question-screen audio-question" data-question-index="${index}" data-question-id="${q.id}" style="display:none;">
+        <div class="card" style="border:1px solid var(--border);">
+          <div style="font-weight:700; font-size:18px;">${esc(q.prompt)}</div>
+          <div class="muted" style="margin-top:8px;">This question expects an audio answer. Record it, preview it, and click <b>Use This Recording</b> only when you want to finalize that answer.</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;">
+            <button type="button" class="btn secondary enable-audio">Enable Microphone</button>
+            <button type="button" class="btn secondary start-audio">Start Recording</button>
+            <button type="button" class="btn secondary stop-audio">Stop Recording</button>
+            <button type="button" class="btn use-audio">Use This Recording</button>
+          </div>
+          <div class="audio-status muted" style="margin-top:10px;">No finalized recording yet.</div>
+          <audio class="audio-preview" controls style="display:none; margin-top:12px; width:100%;"></audio>
+        </div>
+      </section>
+    `;
+  }
+
+  async function requestAudioStream(questionId) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('Audio recording is not supported in this browser');
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (!recorders[questionId]) recorders[questionId] = {};
+    recorders[questionId].stream = stream;
+    return stream;
+  }
+
+  function attachAudioHandlers(container, q) {
+    const questionId = String(q.id);
+    const enableBtn = container.querySelector('.enable-audio');
+    const startBtn = container.querySelector('.start-audio');
+    const stopBtn = container.querySelector('.stop-audio');
+    const useBtn = container.querySelector('.use-audio');
+    const status = container.querySelector('.audio-status');
+    const preview = container.querySelector('.audio-preview');
+
+    enableBtn.addEventListener('click', async () => {
+      status.textContent = 'Requesting microphone permission...';
+      try {
+        const stream = await requestAudioStream(questionId);
+        status.textContent = 'Microphone access granted. You can record now.';
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (err) {
+        status.textContent = err.message || 'Unable to access microphone';
+      }
+    });
+
+    startBtn.addEventListener('click', async () => {
+      status.textContent = 'Starting audio recording...';
+      try {
+        if (typeof MediaRecorder === 'undefined') {
+          throw new Error('Audio recording is not supported in this browser');
+        }
+        const stream = await requestAudioStream(questionId);
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+        const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        const chunks = [];
+
+        recorders[questionId] = { stream, mediaRecorder, chunks };
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) chunks.push(event.data);
+        };
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+          const dataUrl = await blobToDataUrl(blob);
+          pendingAudioAnswers[questionId] = {
+            kind: 'audio_input',
+            mime_type: blob.type,
+            data_url: dataUrl,
+          };
+          preview.src = URL.createObjectURL(blob);
+          preview.style.display = 'block';
+          status.textContent = 'Preview ready. Click "Use This Recording" to finalize this audio answer.';
+          stopRecorderStream(questionId);
+        };
+
+        mediaRecorder.start();
+        status.textContent = 'Recording in progress... click Stop Recording when finished.';
+      } catch (err) {
+        status.textContent = err.message || 'Unable to start recording';
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      const state = recorders[questionId];
+      if (!state || !state.mediaRecorder || state.mediaRecorder.state !== 'recording') {
+        status.textContent = 'No active recording to stop.';
+        return;
+      }
+      state.mediaRecorder.stop();
+      status.textContent = 'Processing audio...';
+    });
+
+    useBtn.addEventListener('click', () => {
+      const pending = pendingAudioAnswers[questionId];
+      if (!pending) {
+        status.textContent = 'Record audio first, then finalize it.';
+        return;
+      }
+      audioAnswers[questionId] = pending;
+      status.textContent = 'Audio answer finalized for this question.';
+    });
+  }
+
+  function renderExamIntro() {
+    examTitleEl.textContent = exam.title || 'Teacher Hiring Exam';
+    examDescriptionEl.textContent = exam.description || 'Please read the instructions carefully before you begin.';
+    examInstructionsEl.textContent = exam.instructions || 'Answer all required questions and finalize audio recordings before submission.';
+    examMetaEl.textContent = `Exam unlocked. ${exam.questions.length} question(s) · ${Number(exam.duration_min || 45)} minutes`;
+    examDurationEl.textContent = `${Number(exam.duration_min || 45)} min`;
+    introEl.style.display = 'block';
+    paymentFormEl.style.display = 'none';
+  }
+
+  function showQuestion(index) {
+    const screens = Array.from(questionsEl.querySelectorAll('.question-screen'));
+    screens.forEach((screen, i) => {
+      screen.style.display = i === index ? 'block' : 'none';
+    });
+
+    currentQuestionIndex = index;
+    questionProgressEl.textContent = `Question ${index + 1} of ${screens.length}`;
+    questionCaptionEl.textContent = 'Answer the current question, then move forward when ready.';
+
+    prevQuestionBtn.style.display = index === 0 ? 'none' : 'inline-flex';
+    nextQuestionBtn.style.display = index === screens.length - 1 ? 'none' : 'inline-flex';
+    submitExamBtn.style.display = index === screens.length - 1 ? 'inline-flex' : 'none';
+  }
+
+  async function unlockExam(sessionId) {
+    const res = await fetch(`/api/v1/public/teacher-hiring-exam/unlocked?payment_session_id=${encodeURIComponent(sessionId)}`);
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Unable to unlock exam');
+
+    unlockedSessionId = sessionId;
+    exam = data.exam;
+
+    const applicant = data.payment || {};
+    if (applicant.full_name) document.getElementById('full_name').value = applicant.full_name;
+    if (applicant.email) document.getElementById('email').value = applicant.email;
+
+    saveExamAccess(sessionId);
+
+    statusEl.textContent = 'Exam unlocked successfully.';
+    renderExamIntro();
+
+    questionsEl.innerHTML = '';
+    (exam.questions || []).forEach((q, index) => {
+      questionsEl.innerHTML += q.type === 'audio_input'
+        ? renderAudioQuestion(q, index)
+        : renderSingleChoiceQuestion(q, index);
+    });
+
+    (exam.questions || []).forEach((q) => {
+      if (q.type !== 'audio_input') return;
+      const container = questionsEl.querySelector(`.audio-question[data-question-id="${q.id}"]`);
+      if (container) attachAudioHandlers(container, q);
+    });
+  }
+
+  startExamBtn.addEventListener('click', () => {
+    introEl.style.display = 'none';
+    formEl.style.display = 'block';
+    showQuestion(0);
+  });
+
+  prevQuestionBtn.addEventListener('click', () => {
+    if (currentQuestionIndex > 0) showQuestion(currentQuestionIndex - 1);
+  });
+
+  nextQuestionBtn.addEventListener('click', () => {
+    const total = questionsEl.querySelectorAll('.question-screen').length;
+    if (currentQuestionIndex < total - 1) showQuestion(currentQuestionIndex + 1);
+  });
+
+  resumeExamBtn.addEventListener('click', async () => {
+    const saved = getSavedExamAccess();
+    if (!saved || !saved.payment_session_id) {
+      paymentStatusEl.textContent = 'No saved paid exam session found.';
+      return;
+    }
+    paymentStatusEl.textContent = 'Resuming your paid exam...';
+    try {
+      await unlockExam(saved.payment_session_id);
+      paymentStatusEl.textContent = 'Paid exam resumed successfully.';
+    } catch (err) {
+      paymentStatusEl.textContent = err.message || 'Unable to resume exam';
+    }
+  });
+
+  if (devExamBypassEnabled && devUnlockBtn) {
+    devUnlockBtn.addEventListener('click', async () => {
+      const payload = getFormData();
+      if (!payload.full_name || !payload.email) {
+        paymentStatusEl.textContent = 'Full name and email are required for dev unlock.';
+        return;
+      }
+
+      paymentStatusEl.textContent = 'Unlocking exam in dev mode...';
+      try {
+        const res = await fetch('/api/v1/public/teacher-hiring-exam/payments/dev-unlock', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Dev unlock failed');
+        paymentStatusEl.textContent = 'Dev unlock successful. Loading exam...';
+        await unlockExam(data.payment_session_id);
+      } catch (err) {
+        paymentStatusEl.textContent = err.message || 'Dev unlock failed';
+      }
+    });
+  }
+
+  paymentFormEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = getFormData();
+    if (!payload.full_name || !payload.email) return;
+
+    paymentStatusEl.textContent = 'Creating Stripe checkout...';
+    try {
+      const res = await fetch('/api/v1/public/teacher-hiring-exam/payments/checkout-session', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          ...payload,
+          success_url: `${window.location.origin}${window.location.pathname}?payment_success=1&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}${window.location.pathname}?payment_cancelled=1`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Unable to initialize payment');
+
+      paymentStatusEl.textContent = 'Redirecting to Stripe...';
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error('Stripe checkout URL missing');
+      }
+    } catch (err) {
+      paymentStatusEl.textContent = err.message || 'Payment initialization failed';
+    }
+  });
+
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!exam || !unlockedSessionId) return;
+
+    const answers = {};
+    (exam.questions || []).forEach((q) => {
+      if (q.type === 'audio_input') {
+        if (audioAnswers[String(q.id)]) answers[String(q.id)] = audioAnswers[String(q.id)];
+        return;
+      }
+      const checked = formEl.querySelector(`input[name="q_${q.id}"]:checked`);
+      if (checked) answers[String(q.id)] = checked.value;
+    });
+
+    const applicant = getFormData();
+    const payload = {
+      exam_id: exam.id,
+      full_name: applicant.full_name,
+      email: applicant.email,
+      phone: applicant.phone,
+      payment_session_id: unlockedSessionId,
+      answers,
+    };
+
+    submitStatusEl.textContent = 'Submitting...';
+    try {
+      const res = await fetch('/api/v1/public/teacher-hiring-exam/attempts', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Submission failed');
+      submitStatusEl.textContent = 'Exam submitted. Confirmation email sent.';
+      Object.keys(recorders).forEach(stopRecorderStream);
+      formEl.reset();
+    } catch (err) {
+      submitStatusEl.textContent = err.message || 'Submission failed';
+    }
+  });
+
+  (async () => {
+    applySavedAccessToForm();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment_cancelled') === '1') {
+      paymentStatusEl.textContent = 'Payment cancelled. Please complete payment to continue.';
+      return;
+    }
+
+    const sessionId = params.get('session_id');
+    if (!sessionId) return;
+
+    paymentStatusEl.textContent = 'Verifying payment...';
+    try {
+      const res = await fetch('/api/v1/public/teacher-hiring-exam/payments/confirm', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({payment_session_id: sessionId}),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok || !data.payment_verified) throw new Error(data.error || 'Payment not confirmed');
+      paymentStatusEl.textContent = 'Payment successful. Loading exam...';
+      await unlockExam(sessionId);
+    } catch (err) {
+      paymentStatusEl.textContent = err.message || 'Payment verification failed';
+    }
+  })();
+})();
+</script>
+{% endblock %}
