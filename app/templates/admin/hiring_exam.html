@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <h2>Teacher Hiring Exam Setup</h2>
+    <p class="muted">Create/update the exam JSON that applicants see after paying the $5 Stripe application fee.</p>
+  </div>
+
+
+
+  <div class="card admin-nav" style="margin-top:14px; margin-bottom:14px;">
+    <a href="{{ url_for('admin.messages') }}">Messages</a>
+    <a href="{{ url_for('admin.teachers') }}">Teachers</a>
+    <a href="{{ url_for('admin.venues') }}">Venues</a>
+    <a href="{{ url_for('admin.syllabus') }}">Syllabus</a>
+    <a href="{{ url_for('admin.bookings') }}">Bookings</a>
+    <a href="{{ url_for('admin.users') }}">Users</a>
+    <a href="{{ url_for('admin.hiring_exam') }}" class="active">Hiring Exam</a>
+    <a href="{{ url_for('admin.students') }}">Students</a>
+  </div>
+
+  <div class="card" style="max-width:1000px; margin:0 auto;">
+    <form id="hiring-exam-form">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <label class="muted">Exam Title</label>
+          <input class="input" type="text" id="title" required />
+        </div>
+        <div>
+          <label class="muted">Duration (minutes)</label>
+          <input class="input" type="number" min="5" max="300" id="duration_min" required />
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <label class="muted">Description</label>
+        <textarea class="input" id="description" rows="2"></textarea>
+      </div>
+
+      <div style="margin-top:12px;">
+        <label class="muted">Instructions</label>
+        <textarea class="input" id="instructions" rows="2"></textarea>
+      </div>
+
+      <hr style="margin:18px 0; border-color:var(--border);" />
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">Questions</h3>
+        <button type="button" class="btn secondary" id="add-question">+ Add Question</button>
+      </div>
+
+      <div id="questions-wrap"></div>
+
+      <div style="margin-top:16px; display:flex; gap:8px; align-items:center;">
+        <button class="btn" type="submit">Save & Publish Exam</button>
+        <span id="save-status" class="muted"></span>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const form = document.getElementById('hiring-exam-form');
+  const wrap = document.getElementById('questions-wrap');
+  const addBtn = document.getElementById('add-question');
+  const saveStatus = document.getElementById('save-status');
+
+  let questionCounter = 0;
+
+  function esc(v) {
+    return String(v || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[s]));
+  }
+
+  function addQuestionCard(question = null) {
+    questionCounter += 1;
+    const qid = question?.id || questionCounter;
+    const prompt = question?.prompt || '';
+    const options = Array.isArray(question?.options) && question.options.length ? question.options : ['', ''];
+    const required = question?.required !== false;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginBottom = '12px';
+    card.dataset.qid = String(qid);
+
+    const optionsHtml = options.map((opt) => `
+      <input class="input option-input" type="text" placeholder="Option" value="${esc(opt)}" style="margin-bottom:8px;" />
+    `).join('');
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
+        <div style="flex:1;">
+          <label class="muted">Question Prompt</label>
+          <input class="input question-prompt" type="text" value="${esc(prompt)}" required />
+        </div>
+        <div>
+          <label class="muted">Required</label><br>
+          <input type="checkbox" class="question-required" ${required ? 'checked' : ''}>
+        </div>
+        <button type="button" class="btn secondary remove-question">Remove</button>
+      </div>
+      <div class="options-list" style="margin-top:10px;">${optionsHtml}</div>
+      <button type="button" class="btn secondary add-option" style="margin-top:6px;">+ Add Option</button>
+    `;
+
+    card.querySelector('.remove-question').addEventListener('click', () => card.remove());
+    card.querySelector('.add-option').addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.className = 'input option-input';
+      input.type = 'text';
+      input.placeholder = 'Option';
+      input.style.marginBottom = '8px';
+      card.querySelector('.options-list').appendChild(input);
+    });
+
+    wrap.appendChild(card);
+  }
+
+  function collectQuestions() {
+    return Array.from(wrap.querySelectorAll('.card')).map((card, i) => {
+      const prompt = card.querySelector('.question-prompt').value.trim();
+      const required = card.querySelector('.question-required').checked;
+      const options = Array.from(card.querySelectorAll('.option-input'))
+        .map((i) => i.value.trim())
+        .filter(Boolean);
+
+      return {
+        id: i + 1,
+        type: 'single_choice',
+        prompt,
+        options,
+        required,
+      };
+    }).filter((q) => q.prompt);
+  }
+
+  async function loadExistingExam() {
+    saveStatus.textContent = 'Loading existing exam...';
+    try {
+      const res = await fetch('/api/v1/admin/teacher-hiring-exam');
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load exam');
+
+      const exam = data.exam;
+      if (!exam) {
+        document.getElementById('title').value = 'Teacher Hiring Assessment';
+        document.getElementById('duration_min').value = '45';
+        addQuestionCard();
+        saveStatus.textContent = 'No active exam found. Create one below.';
+        return;
+      }
+
+      document.getElementById('title').value = exam.title || 'Teacher Hiring Assessment';
+      document.getElementById('duration_min').value = String(exam.duration_min || 45);
+      document.getElementById('description').value = exam.description || '';
+      document.getElementById('instructions').value = exam.instructions || '';
+      wrap.innerHTML = '';
+      (exam.questions || []).forEach((q) => addQuestionCard(q));
+      if (!exam.questions || !exam.questions.length) addQuestionCard();
+      saveStatus.textContent = 'Loaded active exam.';
+    } catch (err) {
+      saveStatus.textContent = err.message || 'Could not load exam';
+      if (!wrap.children.length) addQuestionCard();
+    }
+  }
+
+  addBtn.addEventListener('click', () => addQuestionCard());
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      title: document.getElementById('title').value.trim(),
+      description: document.getElementById('description').value.trim(),
+      instructions: document.getElementById('instructions').value.trim(),
+      duration_min: Number(document.getElementById('duration_min').value || 45),
+      questions: collectQuestions(),
+    };
+
+    if (!payload.questions.length) {
+      saveStatus.textContent = 'Please add at least one question.';
+      return;
+    }
+
+    const invalid = payload.questions.find((q) => q.options.length < 2);
+    if (invalid) {
+      saveStatus.textContent = 'Each question must have at least two options.';
+      return;
+    }
+
+    saveStatus.textContent = 'Saving...';
+    try {
+      const res = await fetch('/api/v1/admin/teacher-hiring-exam', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Save failed');
+      saveStatus.textContent = 'Saved and published successfully.';
+    } catch (err) {
+      saveStatus.textContent = err.message || 'Save failed';
+    }
+  });
+
+  loadExistingExam();
+})();
+</script>
+{% endblock %}
