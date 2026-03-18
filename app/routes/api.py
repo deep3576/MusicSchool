@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 
 from datetime import datetime
@@ -40,6 +41,19 @@ def _row_to_dict(row):
         out[k] = _to_iso(v)
     return out
 
+
+
+
+def _json_field(value):
+    if value in (None, ""):
+        return None
+    if isinstance(value, (dict, list)):
+        return value
+    if isinstance(value, (bytes, bytearray)):
+        value = value.decode("utf-8", errors="ignore")
+    if isinstance(value, str):
+        return json.loads(value)
+    return value
 
 def _parse_json():
     return request.get_json(silent=True) or {}
@@ -1331,7 +1345,7 @@ def admin_teacher_hiring_exam_get():
             "description": row["description"],
             "instructions": row["instructions"],
             "duration_min": int(row["duration_min"] or 45),
-            "questions": row["questions_json"] or [],
+            "questions": _json_field(row["questions_json"]) or [],
             "is_active": bool(row["is_active"]),
             "created_at": _to_iso(row["created_at"]),
             "updated_at": _to_iso(row["updated_at"]),
@@ -1371,7 +1385,7 @@ def admin_teacher_hiring_exam_upsert():
         "description": description or None,
         "instructions": instructions or None,
         "duration_min": duration_min,
-        "questions_json": questions,
+        "questions_json": json.dumps(questions),
         "created_by_user_id": current_user.id,
     })
     exam_id = int(db.session.execute(text("SELECT LAST_INSERT_ID()")).scalar())
@@ -1554,7 +1568,7 @@ def public_teacher_hiring_exam_unlocked_get():
             "description": row["description"],
             "instructions": row["instructions"],
             "duration_min": int(row["duration_min"] or 45),
-            "questions": row["questions_json"] or [],
+            "questions": _json_field(row["questions_json"]) or [],
         },
     })
 
@@ -1589,7 +1603,7 @@ def public_teacher_hiring_exam_submit():
     if not exam_row:
         return _json_error("Exam is not active or does not exist", 404)
 
-    validation_error = _validate_exam_answers(exam_row.get("questions_json") or [], answers)
+    validation_error = _validate_exam_answers(_json_field(exam_row.get("questions_json")) or [], answers)
     if validation_error:
         return _json_error(validation_error, 422)
 
