@@ -1394,6 +1394,11 @@ def admin_teacher_hiring_exam_upsert():
     return jsonify({"ok": True, "exam_id": exam_id}), 201
 
 
+
+
+def _dev_exam_bypass_enabled():
+    return os.getenv("ALLOW_HIRING_EXAM_DEV_BYPASS", "").strip().lower() in {"1", "true", "yes", "on"}
+
 def _stripe_secrets():
     secret_key = os.getenv("STRIPE_SECRET_KEY", "").strip()
     publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY", "").strip()
@@ -1413,6 +1418,50 @@ def _require_paid_exam_session(payment_session_id: str):
           AND status = 'PAID'
         LIMIT 1
     """), {"session_id": payment_session_id}).mappings().first()
+
+
+@api_bp.post("/public/teacher-hiring-exam/payments/dev-unlock")
+def public_teacher_hiring_exam_dev_unlock():
+    if not _dev_exam_bypass_enabled():
+        return _json_error("Dev exam bypass is disabled", 403)
+
+    data = _parse_json()
+    full_name = (data.get("full_name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+
+    if not full_name or not email:
+        return _json_error("full_name and email are required", 422)
+
+    exam = db.session.execute(text("""
+        SELECT id
+        FROM teacher_hiring_exam
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 1
+    """)).mappings().first()
+    if not exam:
+        return _json_error("No active teacher hiring exam found", 404)
+
+    payment_session_id = f"dev_exam_{int(datetime.utcnow().timestamp() * 1000)}"
+    db.session.execute(text("""
+        INSERT INTO teacher_hiring_exam_payment
+          (exam_id, full_name, email, amount_cents, currency, stripe_session_id, payment_status, paid_at, created_at, updated_at)
+        VALUES
+          (:exam_id, :full_name, :email, 0, 'usd', :stripe_session_id, 'PAID', NOW(), NOW(), NOW())
+    """), {
+        "exam_id": int(exam["id"]),
+        "full_name": full_name,
+        "email": email,
+        "stripe_session_id": payment_session_id,
+    })
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "exam_id": int(exam["id"]),
+        "payment_session_id": payment_session_id,
+        "dev_mode_enabled": True,
+    })
 
 
 @api_bp.post("/public/teacher-hiring-exam/payments/checkout-session")

@@ -24,8 +24,12 @@
         <label class="muted">Phone (optional)</label>
         <input class="input" type="text" id="phone" />
       </div>
-      <div style="margin-top:16px; display:flex; gap:8px; align-items:center;">
+      <div style="margin-top:16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
         <button class="btn" type="submit">Pay $5 & Unlock Exam</button>
+        {% if dev_exam_bypass_enabled %}
+        <button class="btn secondary" type="button" id="dev-unlock-exam">Dev Unlock Exam</button>
+        <span class="muted">Testing mode enabled: payment bypass is allowed.</span>
+        {% endif %}
         <span id="payment-status" class="muted"></span>
       </div>
     </form>
@@ -49,9 +53,11 @@
   const statusEl = document.getElementById('exam-status');
   const paymentFormEl = document.getElementById('payment-form');
   const paymentStatusEl = document.getElementById('payment-status');
+  const devUnlockBtn = document.getElementById('dev-unlock-exam');
   const formEl = document.getElementById('teacher-exam-form');
   const questionsEl = document.getElementById('exam-questions');
   const submitStatusEl = document.getElementById('submit-status');
+  const devExamBypassEnabled = {{ 'true' if dev_exam_bypass_enabled else 'false' }};
 
   let exam = null;
   let unlockedSessionId = null;
@@ -226,6 +232,31 @@
 
     paymentFormEl.style.display = 'none';
     formEl.style.display = 'block';
+  }
+
+  if (devExamBypassEnabled && devUnlockBtn) {
+    devUnlockBtn.addEventListener('click', async () => {
+      const payload = getFormData();
+      if (!payload.full_name || !payload.email) {
+        paymentStatusEl.textContent = 'Full name and email are required for dev unlock.';
+        return;
+      }
+
+      paymentStatusEl.textContent = 'Unlocking exam in dev mode...';
+      try {
+        const res = await fetch('/api/v1/public/teacher-hiring-exam/payments/dev-unlock', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Dev unlock failed');
+        paymentStatusEl.textContent = 'Dev unlock successful. Loading exam...';
+        await unlockExam(data.payment_session_id);
+      } catch (err) {
+        paymentStatusEl.textContent = err.message || 'Dev unlock failed';
+      }
+    });
   }
 
   paymentFormEl.addEventListener('submit', async (e) => {

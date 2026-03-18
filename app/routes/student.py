@@ -1,3 +1,4 @@
+import os
 from types import SimpleNamespace
 from datetime import datetime, timedelta, time
 from flask import Blueprint, request, current_app, jsonify, make_response, redirect, url_for, flash, render_template, \
@@ -69,7 +70,12 @@ def admissions():
 
 @main_bp.get("/careers/teacher-exam")
 def teacher_exam():
-    return render_template("teacher_exam.html", title="Teacher Hiring Exam")
+    dev_exam_bypass_enabled = os.getenv("ALLOW_HIRING_EXAM_DEV_BYPASS", "").strip().lower() in {"1", "true", "yes", "on"}
+    return render_template(
+        "teacher_exam.html",
+        title="Teacher Hiring Exam",
+        dev_exam_bypass_enabled=dev_exam_bypass_enabled,
+    )
 
 
 @main_bp.get("/auth/login")
