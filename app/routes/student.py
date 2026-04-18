@@ -9,7 +9,8 @@ from ..emailer import send_email
 from ..create_meeting import create_google_meet
 from ..extensions import db
 from ..forms import SignupForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
-from ..auth_user import AppUser
+from ..auth_user import AppUser, get_user_by_id
+from ..extensions import limiter
 from sqlalchemy import text
 from itsdangerous import BadSignature, SignatureExpired ,URLSafeTimedSerializer
 from weasyprint import HTML
@@ -285,10 +286,9 @@ def book_submit():
 
     def dbg(msg: str):
         try:
-            current_app.logger.info(f"[book_submit] {msg}")
+            current_app.logger.info("[book_submit] %s", msg)
         except Exception:
             pass
-        print(f"[book_submit] {msg}")
 
     if not availability_id and (not start_s or not end_s):
         flash("Please select a slot.", "danger")
@@ -641,25 +641,37 @@ def book_submit():
         </html>
         """
 
-        send_email(
-            current_user.email,
-            "Booking Confirmation - The Rhythm School",
-            plain,
-            html
-        )
-        if slot.get("teacher_email"):
+        school_notify_email = current_app.config.get("SCHOOL_NOTIFY_EMAIL", "therythmschool@gmail.com")
+        try:
             send_email(
-                slot["teacher_email"],
-                "New Class Booking - The Rhythm School",
+                current_user.email,
+                "Booking Confirmation - The Rhythm School",
                 plain,
                 html
             )
-        send_email(
-            "therythmschool@gmail.com",
-            "Booking Notification - The Rhythm School",
-            plain,
-            html
-        )
+        except Exception:
+            current_app.logger.exception("Failed to send booking confirmation to student")
+
+        if slot.get("teacher_email"):
+            try:
+                send_email(
+                    slot["teacher_email"],
+                    "New Class Booking - The Rhythm School",
+                    plain,
+                    html
+                )
+            except Exception:
+                current_app.logger.exception("Failed to send booking notification to teacher")
+
+        try:
+            send_email(
+                school_notify_email,
+                "Booking Notification - The Rhythm School",
+                plain,
+                html
+            )
+        except Exception:
+            current_app.logger.exception("Failed to send booking notification to school")
 
         flash("Booking confirmed!", "success")
         return redirect(url_for("student.my_bookings"))
@@ -715,6 +727,7 @@ def my_bookings():
 
 
 @main_bp.route("/signup", methods=["GET", "POST"])
+@limiter.limit("10 per minute; 30 per hour")
 def signup():
     if current_user.is_authenticated:
         return redirect(url_for("student.book"))
@@ -770,10 +783,6 @@ def signup():
         # Now login
         u = get_user_by_id(int(user_id))
         login_user(u)
-
-        new_id = db.session.execute(text("SELECT id FROM user WHERE email=:email"), {"email": email}).scalar()
-        u = get_user_by_id(int(new_id))
-        login_user(u)
         flash("Account created!", "success")
         return redirect(url_for("student.book"))
 
@@ -802,29 +811,6 @@ def get_roles_for_user(user_id: int) -> list[str]:
     return roles
 
 
-def get_user_by_id(user_id: int):
-    row = db.session.execute(text("""
-        SELECT id, email, first_name, last_name, phone,available_credits
-        FROM `user`
-        WHERE id = :id
-        LIMIT 1
-    """), {"id": user_id}).mappings().first()
-
-    if not row:
-        return None
-
-    roles = get_roles_for_user(int(row["id"]))
-
-    return AppUser(
-        id=int(row["id"]),
-        email=row["email"],
-        role=roles,  # keep field name "role" if your AppUser uses it
-        first_name=row["first_name"],
-        last_name=row["last_name"],
-        phone=row["phone"],
-        available_credits=row["available_credits"]
-    )
-
 def get_active_role(user):
     # if already chosen and still valid, use it
     chosen = session.get("active_role")
@@ -844,15 +830,14 @@ def get_active_role(user):
 
 
 @main_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("20 per minute; 100 per hour")
 def login():
     # If already logged in, route based on active role / choose role
     if current_user.is_authenticated:
         # if multiple roles and not chosen -> choose page
         roles = current_user.role or []
-        print(current_user.role)
 
         active = session.get("active_role")
-        print(active)
         if len(roles) > 1 and active not in roles:
             return redirect(url_for("student.choose_role"))
         return redirect(url_for("student.after_login_redirect"))
@@ -972,6 +957,7 @@ def _serializer():
 
 
 @main_bp.route("/forgotpassword", methods=["GET", "POST"])
+@limiter.limit("5 per minute; 20 per hour")
 def forgotpassword():
     form = ForgotPasswordForm()  # contains only email
     if form.validate_on_submit():
@@ -1078,8 +1064,7 @@ def forgotpassword():
             </html>
             """
 
-            send_email(email, subject="Reset your password", body=reset_url ,html=html)
-            print("RESET LINK:", reset_url)  # for testing
+            send_email(email, subject="Reset your password", body=reset_url, html=html)
 
         return redirect(url_for("student.login"))
 

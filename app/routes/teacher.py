@@ -73,7 +73,6 @@ def _certificate_public_link(student_id: int, filename: str) -> str:
 @teacher_bp.get("/todaysClasses")
 @login_required
 def todaysClasses():
-    print(current_user.id)
     bookings_rows = db.session.execute(text("""
         SELECT
           b.id,
@@ -122,8 +121,6 @@ def todaysClasses():
                       if r["venue_id"] else None),
             "google_meet_link": r.get("google_meet_link"),
         }))
-    print(bookings_list)
-
     guard = _ensure_teacher_role()
     if guard is not None:
         return guard

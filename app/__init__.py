@@ -8,7 +8,7 @@ from flask import Flask, jsonify, redirect, request, session, url_for
 from flask_login import current_user
 from flask_apscheduler import APScheduler
 
-from .extensions import db, login_manager
+from .extensions import db, login_manager, limiter
 from .jobs import scheduling  # make sure jobs.py exists
 
 scheduler = APScheduler()
@@ -80,15 +80,30 @@ def _register_optional_blueprint(app: Flask, module_name: str, blueprint_attr: s
 
 
 def create_app() -> Flask:
+    import warnings
     app = Flask(__name__)
 
     cfg, db_section = _read_config()
-    app.config["SECRET_KEY"] = cfg.get("flask", "secret_key", fallback="dev-secret-change-me")
+
+    secret_key = cfg.get("flask", "secret_key", fallback="dev-secret-change-me")
+    if secret_key in ("dev-secret-change-me", "CHANGE_ME_TO_A_LONG_RANDOM_STRING", ""):
+        warnings.warn(
+            "SECRET_KEY is set to an insecure default. Set a strong random value in config.ini [flask] secret_key.",
+            stacklevel=2,
+        )
+    app.config["SECRET_KEY"] = secret_key
 
     app.config["SQLALCHEMY_DATABASE_URI"] = _build_mysql_uri(cfg, db_section)
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB max upload
 
     app.config["MUSIC_SCHOOL_SCHEMA"] = cfg.get(db_section, "database")
+
+    # School notify email used for booking notifications etc.
+    app.config["SCHOOL_NOTIFY_EMAIL"] = cfg.get("email", "admin_notify", fallback="therythmschool@gmail.com")
+    # Scheduler timezone — configurable from config.ini [app] timezone
+    app.config["SCHOOL_TIMEZONE"] = cfg.get("app", "timezone", fallback="America/Toronto")
+
     app.config["ALLOW_HIRING_EXAM_DEV_BYPASS"] = cfg.getboolean(
         "features",
         "allow_hiring_exam_dev_bypass",
@@ -115,6 +130,7 @@ def create_app() -> Flask:
 
     db.init_app(app)
     login_manager.init_app(app)
+    limiter.init_app(app)
 
     @login_manager.unauthorized_handler
     def _handle_unauthorized():
@@ -142,6 +158,22 @@ def create_app() -> Flask:
             ar = None  # multiple roles and not chosen yet
 
         return {"active_role": ar}
+
+    @app.after_request
+    def add_security_headers(response):
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; "
+            "img-src 'self' data:; "
+            "connect-src 'self'; "
+            "frame-src https://js.stripe.com;",
+        )
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        return response
 
     # Blueprints
     from .routes.student import main_bp
@@ -174,7 +206,7 @@ def create_app() -> Flask:
         hour=23,               # midnight
         minute=30,
         replace_existing=True,
-        timezone="America/Toronto",
+        timezone=app.config["SCHOOL_TIMEZONE"],
     )
 
     scheduler.start()

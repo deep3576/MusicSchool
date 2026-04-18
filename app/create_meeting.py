@@ -54,7 +54,8 @@ def create_google_meet(start_time, end_time, student_email, teacher_email=None, 
     service = build('calendar', 'v3', credentials=creds)
 
     tz_name = os.getenv("BOOKING_TIMEZONE", "America/Toronto")
-    attendees = [{"email": student_email}, {"email": "therythmschool@gmail.com"}]
+    school_email = os.getenv("SCHOOL_NOTIFY_EMAIL", "therythmschool@gmail.com")
+    attendees = [{"email": student_email}, {"email": school_email}]
     if teacher_email:
         attendees.append({"email": teacher_email})
 
