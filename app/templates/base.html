@@ -3,14 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="dark">
+    <meta name="color-scheme" content="light">
 
     <title>{{ title or "The Rhythm School" }}</title>
 
     <!-- Modern font (optional but recommended) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% if active_role == 'admin' %}
@@ -27,66 +27,91 @@
 </head>
 
 <body class="{% if active_role %}{{ active_role }}{% endif %}">
-<header class="topbar">
+<header class="topbar" id="topbar">
     <div class="wrap topbar-inner">
         <a class="brand" href="{{ url_for('student.index') }}">
-  <span class="brand-mark" aria-hidden="true">
-    <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="The Rhythm School logo">
-  </span>
+            <span class="brand-mark" aria-hidden="true">
+                <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="The Rhythm School logo">
+            </span>
         </a>
 
-
-        <nav class="nav" aria-label="Primary">
+        <nav class="nav" aria-label="Primary" id="desktop-nav">
             <a href="{{ url_for('student.index') }}">Home</a>
-            <a href="{{ url_for('student.contact') }}">Contact Us</a>
-
+            <a href="{{ url_for('student.contact') }}">Contact</a>
             {% if current_user.is_authenticated %}
-            {% if active_role == 'student' %}
-            <a href="{{ url_for('student.book') }}">Book Now</a>
-            <a href="{{ url_for('student.my_bookings') }}">My Bookings</a>
-            {% elif active_role == 'admin' %}
-            <a href="{{ url_for('admin.messages') }}">Messages</a>
-            <a href="{{ url_for('admin.hiring_exam') }}">Hiring Exam</a>
-            {% elif active_role == 'teacher' %}
-            <a href="{{ url_for('teacher.todaysClasses') }}">Teacher</a>
+                {% if active_role == 'student' %}
+                    <a href="{{ url_for('student.book') }}">Book Now</a>
+                    <a href="{{ url_for('student.my_bookings') }}">My Bookings</a>
+                {% elif active_role == 'admin' %}
+                    <a href="{{ url_for('admin.messages') }}">Messages</a>
+                    <a href="{{ url_for('admin.hiring_exam') }}">Hiring Exam</a>
+                {% elif active_role == 'teacher' %}
+                    <a href="{{ url_for('teacher.todaysClasses') }}">My Classes</a>
+                {% endif %}
             {% endif %}
-            {% endif %}
-
         </nav>
 
-
-        <div class="nav-right">
+        <div class="nav-right" id="desktop-nav-right">
             {% if current_user.is_authenticated %}
-            <span class="user-pill">
-              {{ current_user.full_name }}
-                {% if active_role %}
-                      <span class="pill">{{ active_role|capitalize }}</span>
-            {% endif %}
-            {% if active_role == 'student' %}
-                      <span class="credits-pill" title="Available credits">Credits: {{ current_user.available_credits or 0 }}</span>
-            {% endif %}
-          </span>
-            <a class="btn secondary" href="{{ url_for('student.logout') }}">Logout</a>
-            {% if current_user.is_authenticated and (current_user.role|length > 1) %}
-              <a class="btn secondary" href="{{ url_for('student.choose_role') }}">Switch Role</a>
-              {% endif %}
-
+                <span class="user-pill">
+                    {{ current_user.full_name }}
+                    {% if active_role %}<span class="pill">{{ active_role|capitalize }}</span>{% endif %}
+                    {% if active_role == 'student' %}
+                        <span class="credits-pill" title="Available credits">{{ current_user.available_credits or 0 }} credits</span>
+                    {% endif %}
+                </span>
+                {% if current_user.role|length > 1 %}
+                    <a class="btn secondary" href="{{ url_for('student.choose_role') }}">Switch Role</a>
+                {% endif %}
+                <a class="btn secondary" href="{{ url_for('student.logout') }}">Logout</a>
             {% else %}
-            <a class="btn secondary" href="{{ url_for('student.login') }}">Login</a>
-            <a class="btn" href="{{ url_for('student.signup') }}">Sign Up</a>
+                <a class="btn secondary" href="{{ url_for('student.login') }}">Login</a>
+                <a class="btn" href="{{ url_for('student.signup') }}">Sign Up</a>
             {% endif %}
         </div>
 
-        {% if active_role == 'admin'
-  and (admin_unreplied_count|int) > 0 %}
-        <a class="admin-bell" href="{{ url_for('admin.messages') }}" title="Messages to reply"
-           aria-label="Messages to reply">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+        {% if active_role == 'admin' and (admin_unreplied_count|int) > 0 %}
+        <a class="admin-bell" href="{{ url_for('admin.messages') }}" title="{{ admin_unreplied_count }} messages to reply" aria-label="Messages to reply">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5"/>
                 <path d="M9 17a3 3 0 0 0 6 0"/>
             </svg>
             <span class="bell-badge">{{ admin_unreplied_count }}</span>
         </a>
+        {% endif %}
+
+        <!-- Hamburger (mobile only) -->
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-drawer">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" id="hamburger-icon">
+                <line x1="2" y1="4.5" x2="16" y2="4.5"/>
+                <line x1="2" y1="9" x2="16" y2="9"/>
+                <line x1="2" y1="13.5" x2="16" y2="13.5"/>
+            </svg>
+            Menu
+        </button>
+    </div>
+
+    <!-- Mobile drawer -->
+    <div class="nav-drawer wrap" id="mobile-drawer" role="navigation" aria-label="Mobile navigation">
+        <a href="{{ url_for('student.index') }}">Home</a>
+        <a href="{{ url_for('student.contact') }}">Contact</a>
+        {% if current_user.is_authenticated %}
+            {% if active_role == 'student' %}
+                <a href="{{ url_for('student.book') }}">Book Now</a>
+                <a href="{{ url_for('student.my_bookings') }}">My Bookings</a>
+            {% elif active_role == 'admin' %}
+                <a href="{{ url_for('admin.messages') }}">Messages</a>
+                <a href="{{ url_for('admin.hiring_exam') }}">Hiring Exam</a>
+            {% elif active_role == 'teacher' %}
+                <a href="{{ url_for('teacher.todaysClasses') }}">My Classes</a>
+            {% endif %}
+            {% if current_user.role|length > 1 %}
+                <a href="{{ url_for('student.choose_role') }}">Switch Role</a>
+            {% endif %}
+            <a href="{{ url_for('student.logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('student.login') }}">Login</a>
+            <a href="{{ url_for('student.signup') }}">Sign Up</a>
         {% endif %}
     </div>
 </header>
@@ -107,10 +132,48 @@
 
 <footer class="footer">
     <div class="wrap footer-inner">
-        <span class="muted">© {{ 2025 }} The Rhythm School</span>
+        <span class="footer-copy">© 2025 The Rhythm School</span>
+        <div class="footer-links">
+            <a href="{{ url_for('student.index') }}">Home</a>
+            <a href="{{ url_for('student.contact') }}">Contact</a>
+            <a href="{{ url_for('student.book') }}">Book a Class</a>
+        </div>
     </div>
 </footer>
 
 {% block scripts %}{% endblock %}
+
+<script>
+// Hamburger menu
+const toggle = document.getElementById('nav-toggle');
+const drawer = document.getElementById('mobile-drawer');
+if (toggle && drawer) {
+    toggle.addEventListener('click', () => {
+        const open = drawer.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', open);
+    });
+}
+
+// Active nav link highlighting
+(function() {
+    const path = window.location.pathname;
+    document.querySelectorAll('.nav a, .nav-drawer a').forEach(a => {
+        const href = a.getAttribute('href');
+        if (href && href !== '/' && path.startsWith(href)) {
+            a.classList.add('active');
+        } else if (href === '/' && path === '/') {
+            a.classList.add('active');
+        }
+    });
+})();
+
+// Topbar scroll shadow
+const topbar = document.getElementById('topbar');
+if (topbar) {
+    window.addEventListener('scroll', () => {
+        topbar.classList.toggle('scrolled', window.scrollY > 8);
+    }, { passive: true });
+}
+</script>
 </body>
 </html>
