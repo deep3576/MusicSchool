@@ -1,4 +1,5 @@
 import configparser
+import logging
 import mimetypes
 import smtplib
 from email.message import EmailMessage
@@ -6,6 +7,8 @@ from pathlib import Path
 from threading import Thread
 
 from flask import current_app
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_config_path() -> Path:
@@ -87,23 +90,19 @@ def send_email_actual(
             )
 
     try:
-        print(f"Connecting to {host}:{port} ...")
+        logger.debug("Connecting to %s:%s ...", host, port)
         server = smtplib.SMTP(host, port, timeout=20)
         server.ehlo()
         server.starttls()
         server.ehlo()
 
-        print("Logging in...")
         server.login(user, pwd)
-
-        print("Sending email...")
         server.send_message(msg)
-
-        print("✅ SUCCESS: Email sent successfully!")
+        logger.info("Email sent successfully to %s", to_email)
         server.quit()
 
     except Exception as e:
-        print(f"❌ FAILED: {e}")
+        logger.error("Email send failed to %s: %s", to_email, e)
         raise  # important so your app logs it too
 
 

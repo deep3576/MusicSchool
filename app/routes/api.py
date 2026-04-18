@@ -15,7 +15,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..auth_user import AppUser, get_user_by_id
 from ..emailer import send_email
-from ..extensions import db
+from ..extensions import db, limiter
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
 
@@ -73,7 +73,7 @@ def _parse_iso_datetime(value: str):
 
 
 def _serializer():
-    return URLSafeTimedSerializer(current_app.config.get("SECRET_KEY", "dev-secret-change-me"))
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
 
 
 def _roles_for_user(user_id: int) -> list[str]:
@@ -113,6 +113,7 @@ def health():
 # Auth
 # ----------------------------
 @api_bp.post("/auth/signup")
+@limiter.limit("10 per minute; 30 per hour")
 def auth_signup():
     data = _parse_json()
     email = (data.get("email") or "").strip().lower()
@@ -161,6 +162,7 @@ def auth_signup():
 
 
 @api_bp.post("/auth/login")
+@limiter.limit("20 per minute; 100 per hour")
 def auth_login():
     data = _parse_json()
     email = (data.get("email") or "").strip().lower()
@@ -935,6 +937,7 @@ def admin_add_credits(user_id: int):
 # Auth: password reset flow
 # ----------------------------
 @api_bp.post("/auth/forgot-password")
+@limiter.limit("5 per minute; 20 per hour")
 def auth_forgot_password():
     data = _parse_json()
     email = (data.get("email") or "").strip().lower()

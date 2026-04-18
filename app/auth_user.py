@@ -53,7 +53,7 @@ def get_user_by_id(user_id: int) -> AppUser | None:
         WHERE user_id = :id AND is_active = 1
     """), {"id": user_id}).scalars().all()   # returns list[str]
 
-    print(f"Roles Sent  by Login Manager:{roles}")
+    # roles loaded from user_role table
     return AppUser(
         id=int(row["id"]),
         email=row["email"],
@@ -71,4 +71,6 @@ def register_user_loader(login_manager):
         try:
             return get_user_by_id(int(user_id))
         except Exception:
+            import logging
+            logging.getLogger(__name__).exception("user_loader failed for user_id=%s", user_id)
             return None

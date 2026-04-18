@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from pathlib import Path
 from functools import wraps
@@ -22,13 +23,19 @@ def _kingsman_schema() -> str | None:
     return current_app.config.get("KINGSMAN_SCHEMA")
 
 
+_VALID_SCHEMA_RE = re.compile(r'^[A-Za-z0-9_$]+$')
+
+
 @api_kingsman_bp.before_request
 def _use_kingsman_schema():
     schema = _kingsman_schema()
     if not schema:
         return jsonify({"ok": False, "error": "Kingsman schema is not configured"}), 503
 
-    db.session.execute(text("USE `{}`".format(schema.replace("`", ""))))
+    if not _VALID_SCHEMA_RE.match(schema):
+        return jsonify({"ok": False, "error": "Invalid schema name in configuration"}), 500
+
+    db.session.execute(text("USE `{}`".format(schema)))
 
     if request.method == "OPTIONS":
         return ("", 204)
@@ -37,9 +44,9 @@ def _use_kingsman_schema():
 @api_kingsman_bp.teardown_request
 def _restore_music_school_schema(_exc=None):
     default_schema = current_app.config.get("MUSIC_SCHOOL_SCHEMA")
-    if default_schema:
+    if default_schema and _VALID_SCHEMA_RE.match(default_schema):
         try:
-            db.session.execute(text("USE `{}`".format(default_schema.replace("`", ""))))
+            db.session.execute(text("USE `{}`".format(default_schema)))
         except Exception:
             db.session.rollback()
 
@@ -84,7 +91,7 @@ def _parse_iso_datetime(value: str):
 
 
 def _serializer():
-    return URLSafeTimedSerializer(current_app.config.get("SECRET_KEY", "dev-secret-change-me"))
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
 
 
 def _normalize_origin(origin: str) -> str:

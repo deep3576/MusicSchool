@@ -200,7 +200,6 @@ def messages_send():
             return redirect(url_for("admin.messages", email=email))
 
         db.session.commit()
-        print("messages/send/")
         try:
             send_email(email, reply_subject, reply_body)
         except Exception:
@@ -246,8 +245,6 @@ def reply_message(msg_id):
     """), {"sub": reply_subject, "body": reply_body, "id": msg_id})
     db.session.commit()
 
-    print("Here before Try block")
-    print("messages/msg_id/send/")
     try:
         send_email(msg["email"], reply_subject, reply_body)
     except Exception:
@@ -284,7 +281,10 @@ def _parse_attempt_answers(value):
 @admin_required
 def hiring_exam_attempts():
     q = (request.args.get("q") or "").strip().lower()
-    page = max(int(request.args.get("page") or 1), 1)
+    try:
+        page = max(int(request.args.get("page") or 1), 1)
+    except (TypeError, ValueError):
+        page = 1
     per_page = 20
     offset = (page - 1) * per_page
 
@@ -399,17 +399,9 @@ def teachers():
           AND cl.is_active = 1
         ORDER BY tcl.teacher_id ASC, cl.title ASC
     """)).mappings().all()
-    info = db.session.execute(text("""
-        SELECT DATABASE() AS dbname, USER() AS user, @@hostname AS host, @@port AS port
-    """)).mappings().first()
-    print("DEBUG DB:", info)
-
-    classlevel_rows= db.session.execute(text("""
+    classlevel_rows = db.session.execute(text("""
         SELECT id,code,title,description,is_active FROM class_level WHERE is_active = 1
     """)).mappings().all()
-    print("DEBUG classlevel_rows count =", len(classlevel_rows))
-    cnt = db.session.execute(text("SELECT COUNT(*) AS c FROM class_level")).mappings().first()
-    print("DEBUG class_level total:", cnt["c"])
 
     venues_rows = db.session.execute(text("""
         SELECT id, name
@@ -729,7 +721,6 @@ def teacher_delete(teacher_id):
 def teacher_edit(teacher_id):
     first_name = (request.form.get("first_name") or "").strip()
     last_name = (request.form.get("last_name") or "").strip()
-    print(first_name + ' ' + last_name)
 
     if not first_name or not last_name:
         flash("Teacher name required.", "danger")
@@ -860,9 +851,8 @@ def teacher_availability(teacher_id):
 def availability_create(teacher_id):
     # ---------- Debug helper ----------
     def dbg(msg: str):
-        print(f"[availability_create] {msg}")
         try:
-            current_app.logger.info(f"[availability_create] {msg}")
+            current_app.logger.info("[availability_create] %s", msg)
         except Exception:
             pass
 
@@ -1088,9 +1078,8 @@ def max_iters_from_dates(date1, date2) -> int:
 def availability_auto_create(teacher_id: int) -> int:
     # ---------- Debug helper ----------
     def dbg(msg: str):
-        print(f"[availability_create] {msg}")
         try:
-            current_app.logger.info(f"[availability_create] {msg}")
+            current_app.logger.info("[availability_create] %s", msg)
         except Exception:
             pass
 
@@ -1139,9 +1128,7 @@ def availability_auto_create(teacher_id: int) -> int:
     dbg(f"max_end_date={max_end_date}")
 
     month_end_date = date.today() + timedelta(days=29)
-    print(f"Debug:{month_end_date}")
-    print(f"Debug:{max_end_date}")
-    max_iters = max_iters_from_dates(month_end_date,max_end_date)
+    max_iters = max_iters_from_dates(month_end_date, max_end_date)
 
     if max_end_date is not None and max_end_date > month_end_date:
         dbg(f"Skip: already beyond month window. month_end_date={month_end_date}")
