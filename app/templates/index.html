@@ -3,33 +3,39 @@
 
 <section class="hero">
   <div class="hero-bg"
-       style="background-image:url('{{ url_for('static', filename='img/Hero.png') }}');"></div>
+       style="background-image:url(‘{{ url_for(‘static’, filename=’img/Hero.png’) }}’);"></div>
 
   <div class="hero-overlay"></div>
 
   <div class="hero-inner">
     <div class="hero-card">
-
-      <h2>The Rhythm School</h2>
-<!--      <div class="badge">Indian Music School</div>-->
+      <div class="badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        Indian Classical Music
+      </div>
+      <h1>Learn music the right way</h1>
       <p class="hero-sub">
-        Learn Indian classical & light music with structured levels (1M → 10M),
-        guided syllabus, and teacher-led sessions.
+        Structured levels from beginner to advanced (1M → 10M), guided syllabus,
+        and teacher-led sessions — all bookable online.
       </p>
 
       <div class="hero-cta">
-        <a class="btn" href="{{ url_for('student.book') }}">Book Now</a>
+        <a class="btn" href="{{ url_for(‘student.book’) }}">Book a Class</a>
         {% if not current_user.is_authenticated %}
-          <a class="btn secondary" href="{{ url_for('student.signup') }}">Create Account</a>
+          <a class="btn secondary" href="{{ url_for(‘student.signup’) }}">Create Account</a>
         {% else %}
-          <a class="btn secondary" href="{{ url_for('student.my_bookings') }}">My Bookings</a>
+          <a class="btn secondary" href="{{ url_for(‘student.my_bookings’) }}">My Bookings</a>
         {% endif %}
       </div>
 
       <div class="hero-stats">
         <div class="stat">
-          <div class="stat-num">1M – 10M     -    Beginner To Advanced Levels </div>
-          <div class="stat-label">Levels</div>
+          <div class="stat-num">1M → 10M</div>
+          <div class="stat-label">Beginner to Advanced</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">Live Sessions</div>
+          <div class="stat-label">Teacher-led via Google Meet</div>
         </div>
       </div>
     </div>
@@ -44,48 +50,48 @@
 
   <div class="grid3">
     <div class="card feature">
-<!--      <div class="feature-ico">🎵</div>-->
+      <div class="feature-ico">🎵</div>
       <div>
         <div class="feature-title">Practice Routine</div>
-        <div class="muted">Warm-ups, breath, swar practice, and steady improvement.</div>
+        <div class="muted">Warm-ups, breath control, swar practice, and steady measurable improvement each level.</div>
       </div>
     </div>
     <div class="card feature">
-<!--      <div class="feature-ico">📘</div>-->
+      <div class="feature-ico">📘</div>
       <div>
         <div class="feature-title">Syllabus by Level</div>
-        <div class="muted">Separate syllabus for each class level (1M–10M) .</div>
+        <div class="muted">A dedicated syllabus for every class level from 1M to 10M — no guesswork.</div>
       </div>
     </div>
     <div class="card feature">
-<!--      <div class="feature-ico">📅</div>-->
+      <div class="feature-ico">📅</div>
       <div>
         <div class="feature-title">Simple Booking</div>
-        <div class="muted">Book your slot.</div>
+        <div class="muted">Pick a slot, confirm in seconds, and get a Google Meet link automatically.</div>
       </div>
     </div>
   </div>
 </section>
 
-
 <section class="section">
   <div class="card callout hiring-callout">
     <div>
-      <h3 style="margin:0;">We Are Hiring Teachers</h3>
-      <p class="muted" style="margin:8px 0 0;">Pay a $5 application fee, then take our teacher eligibility exam (configured by admin).</p>
+      <h3>We Are Hiring Teachers</h3>
+      <p class="muted" style="margin:6px 0 0;">Pay a $5 application fee, then take our teacher eligibility exam online.</p>
     </div>
-    <a class="btn" href="{{ url_for('student.teacher_exam') }}">Apply / Take Exam</a>
+    <a class="btn" href="{{ url_for(‘student.teacher_exam’) }}">Apply &amp; Take Exam</a>
   </div>
 </section>
 
 <div id="teacher-hiring-popup" class="hiring-popup" role="dialog" aria-modal="true" aria-labelledby="hire-title" aria-hidden="true">
   <div class="hiring-popup-card">
-    <h3 id="hire-title">Hiring Alert: Teachers Needed</h3>
-    <p class="muted">You can now take the teacher exam online. Click below to start.</p>
-    <div style="display:flex; gap:8px; margin-top:10px;">
-      <a class="btn" href="{{ url_for('student.teacher_exam') }}">Take Exam</a>
-      <button class="btn secondary" type="button" id="dismiss-hiring-popup">Close</button>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+      <div class="badge" style="background:rgba(107,78,255,.15); border-color:rgba(107,78,255,.25); color:#a08aff;">Now Hiring</div>
+      <button class="btn secondary" type="button" id="dismiss-hiring-popup" style="padding:6px 10px; font-size:13px;" aria-label="Close">✕</button>
     </div>
+    <h3 id="hire-title" style="margin:0 0 8px; color:#fff; font-size:20px;">Teachers Needed</h3>
+    <p style="margin:0 0 16px; color:rgba(255,255,255,.65); font-size:14px; line-height:1.6;">Take the teacher eligibility exam online. A $5 application fee is required to begin.</p>
+    <a class="btn" href="{{ url_for('student.teacher_exam') }}" style="width:100%; justify-content:center;">Take the Exam</a>
   </div>
 </div>
 
@@ -125,11 +131,8 @@
 <section class="section">
   <div class="card callout">
     <div>
-      <h3 style="margin:0;">Ready to begin your journey?</h3>
-      <p class="muted" style="margin:8px 0 0;">
-        Book a slot in seconds.
-<!--        Admin will assign your class level after booking.-->
-      </p>
+      <h3>Ready to begin your journey?</h3>
+      <p class="muted" style="margin:6px 0 0;">Book a slot in seconds. Your teacher will guide you from there.</p>
     </div>
     <a class="btn" href="{{ url_for('student.book') }}">Book a Class</a>
   </div>
